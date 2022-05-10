@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Orsted Fisheries Summary Field Report 
 
-This document summarizes all field activities reported by the team on the Orsted Fisheries project. There are 9 types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, and Glider operations. 
+This document summarizes all field activities reported by the team on the Orsted Fisheries project. There are 10 types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, Acoustic Zooplankton Fish Profiler (AZFP) Glider operations and Ecosystem and Passive Acoustic Monitoring (ECO-PAM) Glider operations. 
 
 ```{r, include=FALSE, echo=TRUE}
 library(readxl)
@@ -26,24 +26,44 @@ flog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUnive
 names(flog) = gsub(" ", "", names(flog))
 flog = mutate(flog, TotalTime = as.numeric(TotalTime))
 
-# make output table
+## make output tables
+# field time
 tout = as.data.frame(rbind(c("Total Hours at sea reported", round(sum(flog$TotalTime, na.rm=T))),
                           c("Hours at sea this month", round(sum(flog$TotalTime[month(flog$DateIn) %in% month(Sys.Date())])))))
-names(tout) = c("Hours","Total")
+names(tout) = c("Vessel Hours","Total")
 tout = tout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 
+# gliders
+gout = flog %>% 
+  mutate(glidergroup = as.numeric(glidergroup)) %>%
+  filter(!is.na(glidergroup)) %>% 
+  group_by(glidergroup) %>%
+  mutate(gt = NA, gt = ifelse(AZFPGlider %in% "yes", "AZFP", "ECO-PAM")) %>%
+  summarize(dd = first(DateOut),
+            rd = last(DateIn),
+            'Days at Sea' = as.numeric(difftime(rd, dd, units = "days")),
+            gt = first(gt)) %>% 
+  rename('Deployment Date' = dd, 'Recovery Date' = rd, 'Glider Type' = gt) %>% # had to use non-character strings in summarize
+  arrange(desc('Deployment Date')) %>% 
+  dplyr::select(-glidergroup)
+col_order <- c("Glider Type", "Deployment Date", "Recovery Date", "Days at Sea")
+gout <- gout[, col_order]
+
+# summary metrics
 out = as.data.frame(rbind(c("Trips where Telemetry occurred", sum(flog$Telemetry %in% "yes")),
                           c("Trips where eDNA occurred", sum(flog$eDNA %in% "yes")),
                           c("Trips where Trapping occurred", sum(flog$Trap %in% "yes")),
                           c("Trips where Baited Remote Underwater Video occurred", sum(flog$BRUV %in% "yes")),
                           c("Trips where Towing a Camera occurred", sum(flog$TowedCam %in% "yes")),
-                          c("Trips where Glider operations occurred", sum(flog$Glider %in% "yes")),
+                          c("Trips where AZFP Glider deployments/recoveries occurred", sum(flog$AZFPGlider %in% "yes")),
+                          c("Trips where ECO-PAM Glider deployments/recoveries occurred", sum(flog$ECOPAMGlider %in% "yes")),
                           c("Trips where Hook & Line occurred", sum(flog$'Hook&Line' %in% "yes")),
                           c("Trips where Trawling occurred", sum(flog$Trawl %in% "yes")),
                           c("Trips where Clam Surveys occurred", sum(flog$Clam %in% "yes"))))
 names(out) = c("Metric","Total")
 out = out %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 
+# vessel use
 vout = as.data.frame(rbind(c("R/V Resilience", sum(flog$VesselUsed %in% "R/V Resilience")),
                            c("R/V Rutgers", sum(flog$VesselUsed %in% "R/V Rutgers")),
                            c("F/V Dana Christine II", sum(flog$VesselUsed %in% "F/V Dana Christine II")),
@@ -54,7 +74,7 @@ vout = as.data.frame(rbind(c("R/V Resilience", sum(flog$VesselUsed %in% "R/V Res
 names(vout) = c("Vessel","Total")
 vout = vout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 
-
+# health and safety, gear, and whales
 hout = as.data.frame(rbind(c("Incident(s)", sum(flog$incident %in% "yes")),
                            c("Gear Interaction(s)", sum(flog$gear %in% "yes")),
                            c("Whale Observation(s)", sum(flog$whales %in% "yes"))))
@@ -65,6 +85,7 @@ hout = hout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 
 ```{r, include = TRUE, echo=FALSE}
 kable(tout, caption = "Time Metrics")
+kable(gout, caption = "Glider Days at Sea")
 kable(out, caption = "Summary Metrics")
 kable(vout, caption = "Vessel Use")
 kable(hout, caption = "Health and Safety, Gear Interactions, and Marine Mammal Observations")
