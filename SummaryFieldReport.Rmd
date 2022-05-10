@@ -1,0 +1,73 @@
+---
+title: "Field Report"
+author: "Kaycee Coleman"
+date: '2022-05-10'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Orsted Fisheries Summary Field Report 
+
+This document summarizes all field activities reported by the team on the Orsted Fisheries project. There are 9 types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, and Glider operations. 
+
+```{r, include=FALSE, echo=TRUE}
+library(readxl)
+library(dplyr)
+library(knitr)
+library(lubridate)
+
+# read in data
+flog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUniversity/Orsted Wind Fisheries Monitoring - Documents/General/Reports and Reporting/1 Fieldwork Log.xlsx")
+                   
+# mutate
+names(flog) = gsub(" ", "", names(flog))
+flog = mutate(flog, TotalTime = as.numeric(TotalTime))
+
+# make output table
+tout = as.data.frame(rbind(c("Total Hours at sea reported", round(sum(flog$TotalTime, na.rm=T))),
+                          c("Hours at sea this month", round(sum(flog$TotalTime[month(flog$DateIn) %in% month(Sys.Date())])))))
+names(tout) = c("Hours","Total")
+tout = tout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
+
+out = as.data.frame(rbind(c("Trips where Telemetry occurred", sum(flog$Telemetry %in% "yes")),
+                          c("Trips where eDNA occurred", sum(flog$eDNA %in% "yes")),
+                          c("Trips where Trapping occurred", sum(flog$Trap %in% "yes")),
+                          c("Trips where Baited Remote Underwater Video occurred", sum(flog$BRUV %in% "yes")),
+                          c("Trips where Towing a Camera occurred", sum(flog$TowedCam %in% "yes")),
+                          c("Trips where Glider operations occurred", sum(flog$Glider %in% "yes")),
+                          c("Trips where Hook & Line occurred", sum(flog$'Hook&Line' %in% "yes")),
+                          c("Trips where Trawling occurred", sum(flog$Trawl %in% "yes")),
+                          c("Trips where Clam Surveys occurred", sum(flog$Clam %in% "yes"))))
+names(out) = c("Metric","Total")
+out = out %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
+
+vout = as.data.frame(rbind(c("R/V Resilience", sum(flog$VesselUsed %in% "R/V Resilience")),
+                           c("R/V Rutgers", sum(flog$VesselUsed %in% "R/V Rutgers")),
+                           c("F/V Dana Christine II", sum(flog$VesselUsed %in% "F/V Dana Christine II")),
+                           c("R/V Petrel", sum(flog$VesselUsed %in% "R/V Petrel")),
+                           c("F/V Darana R", sum(flog$VesselUsed %in% "R/V Darana R")),
+                           c("F/V Joey D", sum(flog$VesselUsed %in% "R/V Joey D")),
+                           c("Truck-Land", sum(flog$VesselUsed %in% "Truck-Land"))))
+names(vout) = c("Vessel","Total")
+vout = vout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
+
+
+hout = as.data.frame(rbind(c("Incident(s)", sum(flog$incident %in% "yes")),
+                           c("Gear Interaction(s)", sum(flog$gear %in% "yes")),
+                           c("Whale Observation(s)", sum(flog$whales %in% "yes"))))
+names(hout) = c("Event","Total")
+hout = hout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
+```
+
+
+```{r, include = TRUE, echo=FALSE}
+kable(tout, caption = "Time Metrics")
+kable(out, caption = "Summary Metrics")
+kable(vout, caption = "Vessel Use")
+kable(hout, caption = "Health and Safety, Gear Interactions, and Marine Mammal Observations")
+
+```
+
