@@ -1,7 +1,7 @@
 ---
 title: "Field Report"
 author: "Kaycee Coleman"
-date: '2022-05-10'
+date: '2022-05-31'
 output: html_document
 ---
 
@@ -9,45 +9,54 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Orsted Fisheries Summary Field Report 
+## Orsted Fisheries Summary Field Report \textcolor{blue}{blue}
 
-This document summarizes all field activities reported by the team on the Orsted Fisheries project. There are 10 types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, Acoustic Zooplankton Fish Profiler (AZFP) Glider operations and Ecosystem and Passive Acoustic Monitoring (ECO-PAM) Glider operations. 
+This document summarizes all field activities reported by the team on the Orsted Fisheries project. There are nine types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, and Acoustic Zooplankton Fish Profiler (AZFP) Glider operations.   
+
+Additionally, another project happening in the proposed wind energy area, [Orsted ECO-PAM](https://orsted-eco-pam-web-portal.srv.axds.co/) using passive acoustics to detect whales, is combined with our glider activity to summarize what has been done in this area. 
 
 ```{r, include=FALSE, echo=TRUE}
 library(readxl)
 library(dplyr)
 library(knitr)
 library(lubridate)
+library(ggplot2)
 
-# read in data
-flog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUniversity/Orsted Wind Fisheries Monitoring - Documents/General/Reports and Reporting/1 Fieldwork Log.xlsx")
-                   
+# read in field log data
+flog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUniversity/Orsted Wind Fisheries Monitoring - General/Reports and Reporting/1 Fieldwork Log.xlsx")
+glog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUniversity/Orsted Wind Fisheries Monitoring - General/Reports and Reporting/1 Fieldwork Log.xlsx", sheet=2)
+# flog <- read_excel("~/Downloads/1 Fieldwork Log.xlsx")
+# glog <- read_excel("~/Downloads/1 Fieldwork Log.xlsx", sheet=2)
+
 # mutate
 names(flog) = gsub(" ", "", names(flog))
 flog = mutate(flog, TotalTime = as.numeric(TotalTime))
+names(glog) = gsub(" ", "", names(glog))
 
 ## make output tables
 # field time
-tout = as.data.frame(rbind(c("Total Hours at sea reported", round(sum(flog$TotalTime, na.rm=T))),
-                          c("Hours at sea this month", round(sum(flog$TotalTime[month(flog$DateIn) %in% month(Sys.Date())])))))
-names(tout) = c("Vessel Hours","Total")
-tout = tout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
+tout = as.data.frame(rbind(c("Total hours reported", round(sum(flog$TotalTime, na.rm=T))),
+                           c("Total hours at sea reported", round(sum(flog$TotalTime[!flog$VesselUsed %in% "Truck-Land"], na.rm=T))),
+                           c("Total hours of land based efforts reported", round(sum(flog$TotalTime[flog$VesselUsed %in% "Truck-Land"], na.rm=T))),
+                           c("Total hours this month", round(sum(flog$TotalTime[month(flog$DateIn) %in% month(Sys.Date())])))))
+names(tout) = c("Hours", "Total")
+tout = tout %>% mutate(Total = as.numeric(Total))
 
-# gliders
-gout = flog %>% 
-  mutate(glidergroup = as.numeric(glidergroup)) %>%
-  filter(!is.na(glidergroup)) %>% 
-  group_by(glidergroup) %>%
-  mutate(gt = NA, gt = ifelse(AZFPGlider %in% "yes", "AZFP", "ECO-PAM")) %>%
-  summarize(dd = first(DateOut),
-            rd = last(DateIn),
-            'Days at Sea' = as.numeric(difftime(rd, dd, units = "days")),
-            gt = first(gt)) %>% 
-  rename('Deployment Date' = dd, 'Recovery Date' = rd, 'Glider Type' = gt) %>% # had to use non-character strings in summarize
-  arrange(desc('Deployment Date')) %>% 
-  dplyr::select(-glidergroup)
-col_order <- c("Glider Type", "Deployment Date", "Recovery Date", "Days at Sea")
-gout <- gout[, col_order]
+time_sum = flog %>% 
+  mutate(mo = month(DateIn),
+         yr = year(DateIn),
+         mo_yr = paste(yr, mo, "01", sep="-"),
+         mo_yr = as.Date(mo_yr, format='%Y-%m-%d')) %>%
+  group_by(mo_yr) %>% 
+  summarise(hours = sum(TotalTime, na.rm=T))
+p=ggplot() + 
+  geom_bar(data = time_sum, aes(x = mo_yr, y = hours), stat="identity",fill="cornflowerblue") + 
+  labs(x="Month", y="Total Hours of Fieldwork per Month") +
+  theme_bw() +
+  scale_x_date(date_labels = "%Y-%b", 
+               breaks = as.Date(c("2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01"))) 
+  #scale_x_continuous(breaks = round(seq(min(time_sum$mo_yr), max(time_sum$mo_yr)+5, by = 31),1)) 
+
 
 # summary metrics
 out = as.data.frame(rbind(c("Trips where Telemetry occurred", sum(flog$Telemetry %in% "yes")),
@@ -56,7 +65,7 @@ out = as.data.frame(rbind(c("Trips where Telemetry occurred", sum(flog$Telemetry
                           c("Trips where Baited Remote Underwater Video occurred", sum(flog$BRUV %in% "yes")),
                           c("Trips where Towing a Camera occurred", sum(flog$TowedCam %in% "yes")),
                           c("Trips where AZFP Glider deployments/recoveries occurred", sum(flog$AZFPGlider %in% "yes")),
-                          c("Trips where ECO-PAM Glider deployments/recoveries occurred", sum(flog$ECOPAMGlider %in% "yes")),
+                          #c("Trips where ECO-PAM Glider deployments/recoveries occurred", sum(flog$ECOPAMGlider %in% "yes")),
                           c("Trips where Hook & Line occurred", sum(flog$'Hook&Line' %in% "yes")),
                           c("Trips where Trawling occurred", sum(flog$Trawl %in% "yes")),
                           c("Trips where Clam Surveys occurred", sum(flog$Clam %in% "yes"))))
@@ -77,18 +86,48 @@ vout = vout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 # health and safety, gear, and whales
 hout = as.data.frame(rbind(c("Incident(s)", sum(flog$incident %in% "yes")),
                            c("Gear Interaction(s)", sum(flog$gear %in% "yes")),
-                           c("Whale Observation(s)", sum(flog$whales %in% "yes"))))
+                           c("Marine Mammal Observation(s)", sum(flog$marinemammals %in% "yes"))))
 names(hout) = c("Event","Total")
 hout = hout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
+
+# gliders
+gout = glog %>% 
+  mutate(das = as.numeric(difftime(recoverydate, deploymentdate, units = "days")),
+         l = paste("[",ID,"](",Links,")")) %>%
+  rename("Recovery Date" = recoverydate, 
+         "Deployment Date" = deploymentdate,
+         "Days at Sea"=das, 
+         "Data Link"=l) %>% 
+  dplyr::select(-ID, -Links)
+
+#             rd = last(DateIn),
+#             'Days at Sea' = as.numeric(difftime(rd, dd, units = "days")),
+# gout = flog %>% 
+#   mutate(glidergroup = as.numeric(glidergroup)) %>%
+#   filter(!is.na(glidergroup)) %>% 
+#   group_by(glidergroup) %>%
+#   mutate(gt = NA, gt = ifelse(AZFPGlider %in% "yes", "AZFP", "ECO-PAM")) %>%
+#   summarize(dd = first(DateOut),
+#             rd = last(DateIn),
+#             'Days at Sea' = as.numeric(difftime(rd, dd, units = "days")),
+#             gt = first(gt)) %>% 
+#   rename('Deployment Date' = dd, 'Recovery Date' = rd, 'Glider Type' = gt) %>% # had to use non-character strings in summarize
+#   arrange(desc('Deployment Date')) %>% 
+#   dplyr::select(-glidergroup)
+# col_order <- c("Glider Type", "Deployment Date", "Recovery Date", "Days at Sea")
+# gout <- gout[, col_order]
 ```
 
 
-```{r, include = TRUE, echo=FALSE}
+```{r, include = TRUE, echo=FALSE, fig.align = 'center'}
 kable(tout, caption = "Time Metrics")
-kable(gout, caption = "Glider Days at Sea")
+p
 kable(out, caption = "Summary Metrics")
 kable(vout, caption = "Vessel Use")
 kable(hout, caption = "Health and Safety, Gear Interactions, and Marine Mammal Observations")
+
+opts <- options(knitr.kable.NA = "")
+kable(gout, caption = "Glider Days at Sea", align = "lccrr")
 
 ```
 
