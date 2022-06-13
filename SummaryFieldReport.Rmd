@@ -1,7 +1,7 @@
 ---
 title: "Field Report"
 author: "Kaycee Coleman"
-date: '2022-05-31'
+date: '2022-06-13'
 output: html_document
 ---
 
@@ -49,12 +49,14 @@ time_sum = flog %>%
          mo_yr = as.Date(mo_yr, format='%Y-%m-%d')) %>%
   group_by(mo_yr) %>% 
   summarise(hours = sum(TotalTime, na.rm=T))
-p=ggplot() + 
+p = ggplot() + 
   geom_bar(data = time_sum, aes(x = mo_yr, y = hours), stat="identity",fill="cornflowerblue") + 
   labs(x="Month", y="Total Hours of Fieldwork per Month") +
   theme_bw() +
   scale_x_date(date_labels = "%Y-%b", 
-               breaks = as.Date(c("2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01"))) 
+               breaks = as.Date(c("2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01", "2022-06-01")))  + 
+  theme(text = element_text(size = 10))
+
   #scale_x_continuous(breaks = round(seq(min(time_sum$mo_yr), max(time_sum$mo_yr)+5, by = 31),1)) 
 
 
@@ -90,6 +92,16 @@ hout = as.data.frame(rbind(c("Incident(s)", sum(flog$incident %in% "yes")),
 names(hout) = c("Event","Total")
 hout = hout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 
+# marine mammal plot
+mm = flog %>% group_by(generalMMgroup) %>% 
+  summarize(n=n()) %>% 
+  filter(!is.na(generalMMgroup)) %>%
+  mutate(generalMMgroup = toupper(generalMMgroup))
+p2 = ggplot() + geom_bar(data = mm, aes(x=generalMMgroup, y=n), stat="identity", fill="cornflowerblue") + 
+  labs(x="General Marine Mammal Group",y="Number of Trips Where a Siting Occurred") + 
+  theme_bw() + 
+  theme(text = element_text(size = 10))
+
 # gliders
 gout = glog %>% 
   mutate(das = as.numeric(difftime(recoverydate, deploymentdate, units = "days")),
@@ -119,13 +131,14 @@ gout = glog %>%
 ```
 
 
-```{r, include = TRUE, echo=FALSE, fig.align = 'center'}
+```{r, include = TRUE, echo=FALSE, out.width='100%'} 
+#fig.align = 'center'}
 kable(tout, caption = "Time Metrics")
 p
 kable(out, caption = "Summary Metrics")
 kable(vout, caption = "Vessel Use")
 kable(hout, caption = "Health and Safety, Gear Interactions, and Marine Mammal Observations")
-
+p2
 opts <- options(knitr.kable.NA = "")
 kable(gout, caption = "Glider Days at Sea", align = "lccrr")
 
