@@ -1,5 +1,5 @@
 # Rutgers Offshore Wind Living Resource Studies
-Rutgers University scientists are working to understand and document how offshore wind-powered turbines affect marine animals through changes to their habitat. Data collection for these studies spans many techniques due to the variety of sizes and habits of marine animals.  
+Rutgers University scientists are working to understand and document how offshore wind-powered turbines affect marine animals through changes to their habitat. Data collection for these studies spans many techniques due to the variety of sizes and habits of marine animals.  Learn more about these efforts [here](https://rowlrs.marine.rutgers.edu/).
 
 # What is the approach?
 Studies start before wind farm development begins and continues during and after installation for several years. Data collection in an area where a wind farm will be developed is matched by collection in a similar area where development is not happening for comparison. This is because animal communities can change for many reasons aside from wind farm development. The sampling approach allows for some effects to be teased out.
