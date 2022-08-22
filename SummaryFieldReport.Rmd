@@ -1,7 +1,7 @@
 ---
 title: "Field Report"
 author: "Kaycee Coleman"
-date: '2022-06-13'
+date: '2022-08-22'
 output: html_document
 ---
 
@@ -11,9 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Orsted Fisheries Summary Field Report \textcolor{blue}{blue}
 
-This document summarizes all field activities reported by the team on the Orsted Fisheries project. There are nine types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, and Acoustic Zooplankton Fish Profiler (AZFP) Glider operations.   
+This document summarizes all field activities reported by the team on the [Orsted Fish Monitoring project in Ocean Wind 1](https://rowlrs.marine.rutgers.edu/research/orsted/ocean-wind-1-fisheries-monitoring-plan/). There are nine types of fieldwork components conducted under this contract: Trawl, Hook & Line, Trap, Baited Remote Underwater Video (BRUV), Telemetry, Towed Camera, Clam survey, eDNA, and Acoustic Zooplankton Fish Profiler (AZFP) Glider operations.   
 
-Additionally, another project happening in the proposed wind energy area, [Orsted ECO-PAM](https://orsted-eco-pam-web-portal.srv.axds.co/) using passive acoustics to detect whales, is combined with our glider activity to summarize what has been done in this area. 
+Additionally, other projects happening in the proposed wind energy area are are listed within our glider activity table to summarize what has been done in this area. These include [Orsted ECO-PAM](https://orsted-eco-pam-web-portal.srv.axds.co/) using passive acoustics to detect whales and [RMI Eco-Gliders](https://rowlrs.marine.rutgers.edu/research/new-jersey-department-of-environment-protection-research-and-monitoring-initiative-rmi/eco-gliders/).
 
 ```{r, include=FALSE, echo=TRUE}
 library(readxl)
@@ -54,7 +54,7 @@ p = ggplot() +
   labs(x="Month", y="Total Hours of Fieldwork per Month") +
   theme_bw() +
   scale_x_date(date_labels = "%Y-%b", 
-               breaks = as.Date(c("2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01", "2022-06-01")))  + 
+               breaks = as.Date(c("2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01")))  + 
   theme(text = element_text(size = 10))
 
   #scale_x_continuous(breaks = round(seq(min(time_sum$mo_yr), max(time_sum$mo_yr)+5, by = 31),1)) 
@@ -80,14 +80,16 @@ vout = as.data.frame(rbind(c("R/V Resilience", sum(flog$VesselUsed %in% "R/V Res
                            c("F/V Dana Christine II", sum(flog$VesselUsed %in% "F/V Dana Christine II")),
                            c("R/V Petrel", sum(flog$VesselUsed %in% "R/V Petrel")),
                            c("F/V Darana R", sum(flog$VesselUsed %in% "R/V Darana R")),
-                           c("F/V Joey D", sum(flog$VesselUsed %in% "R/V Joey D")),
+                           c("F/V Joey D", sum(flog$VesselUsed %in% "F/V Joey D")),
                            c("Truck-Land", sum(flog$VesselUsed %in% "Truck-Land"))))
 names(vout) = c("Vessel","Total")
 vout = vout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
 
 # health and safety, gear, and whales
-hout = as.data.frame(rbind(c("Incident(s)", sum(flog$incident %in% "yes")),
+hout = as.data.frame(rbind(c("Incident(s)", sum(flog$Incident %in% "yes")),
                            c("Gear Interaction(s)", sum(flog$gear %in% "yes")),
+                           c("Marine Debris (lost gear)", sum(flog$marinedebris %in% "yes")),
+                           c("Manual PFD inflation onboard", sum(flog$pfdinflation %in% "yes")),
                            c("Marine Mammal Observation(s)", sum(flog$marinemammals %in% "yes"))))
 names(hout) = c("Event","Total")
 hout = hout %>% mutate(Total = as.numeric(Total)) %>% arrange(desc(Total))
