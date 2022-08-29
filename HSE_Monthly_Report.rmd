@@ -1,0 +1,129 @@
+---
+title: "HSE Monthly Report"
+output: html_document
+#output: word_document
+always_allow_html: true
+---
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"https://upload.wikimedia.org/wikipedia/commons/5/5f/Orsted_RGB_Blue.png\" style=\"float: right;width: 150px;\"/>')
+   });
+</script>
+           
+HSE reporting to be submitted to Ørsted’s representative onsite and to SupplierHSEreport@orsted.dk  no later than the first working day of each month  
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=TRUE}
+library(readxl)
+library(dplyr)
+library(knitr)
+library(lubridate)
+library(kableExtra)
+
+# this is made as a template to fill in the numbers, there are things on this report that cannot be quantified by the field log and therefor will have to be added manually in Word once the report is made. Additionally there are comments that should be added to add clarity to this report. Once this report is generated it should be read and added to before submitting. 
+
+# NEED TO CHANGE MONTH, AS WELL AS VESSEL LOG COLUMNS FOR INSPECTIONS AND MEETINGS IF YEAR CHANGES
+
+# read in field log data
+flog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUniversity/Orsted Wind Fisheries Monitoring - General/Reports and Reporting/1 Fieldwork Log.xlsx")
+# flog <- read_excel("~/Downloads/1 Fieldwork Log.xlsx")
+vlog <- read_excel("~/Library/CloudStorage/OneDrive-SharedLibraries-RutgersUniversity/Orsted Wind Fisheries Monitoring - General/HSE/3 Vessels/Vessel Information Sheet.xlsx")
+# vlog <- read_excel("~/Downloads/Vessel Information Sheet.xlsx")
+
+# mutate
+names(flog) = gsub(" ", "", names(flog))
+flog = mutate(flog, TotalTime = as.numeric(TotalTime))
+
+vlog$`2022 Inspection conducted` = as.Date(as.numeric(vlog$`2022 Inspection conducted`), origin = "1899-12-30")
+vlog$`2022 Kickoff or annual meeting` = as.Date(as.numeric(vlog$`2022 Kickoff or annual meeting`), origin = "1899-12-30")
+
+# define month
+mo = 8
+
+## make output tables
+# field time
+tout = as.data.frame(rbind(c("Contractor","Rutgers University",""),
+                           c("Site","Ocean Wind 1",""),
+                           c("Reporting month", paste(mo,"2022", sep="/"),""),
+                           
+                           
+                           c("Worked Hours within the HSE area of responsibility of Orsted","Current Month","Actual from last month"),
+                           c("Number of hours worked in the month (including subcontractors",
+                             round(sum(flog$TotalTime[month(flog$DateIn) %in% mo]), 2),
+                             round(sum(flog$TotalTime[month(flog$DateIn) %in% (mo-1)]),2)),
+                           c("Number of employees (including subcontractors) on site",
+                             length(unique(unlist(strsplit(flog$ParticipatingPersonnel[month(flog$DateIn) %in% mo],',')))),
+                             length(unique(unlist(strsplit(flog$ParticipatingPersonnel[month(flog$DateIn) %in% (mo-1)],','))))),
+                           c("Leading Activities within the HSE area of responsibility of Orsted","Number","Comments"),
+                           c("Toolbox talks",length(flog$DateOut[month(flog$DateIn) %in% mo]),""),
+                           c("Risk assessments reviewed",
+                             sum(c(any(flog$Trawl[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$'Hook&Line'[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$Trap[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$BRUV[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$Telemetry[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$TowedCam[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$Clam[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$eDNA[month(flog$DateIn) %in% mo] %in% "yes"),
+                                   any(flog$AZFPGlider[month(flog$DateIn) %in% mo] %in% "yes"))),""),
+                           c("Risk assessments changed",0,""),
+                           c("HSE inductions given",
+                             ifelse(any(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
+                                        sum(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
+                                        0),
+                             vlog$Vessel[month(vlog$`2022 Kickoff or annual meeting`) %in% mo]),
+                           c("HSE meetings completed",
+                             ifelse(any(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
+                                        sum(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
+                                        0),
+                             vlog$Vessel[month(vlog$`2022 Kickoff or annual meeting`) %in% mo]),
+                           c("QHSE walks (senior management walks)",0,""),
+                           c("HSE inspections",
+                             ifelse(any(month(vlog$`2022 Inspection conducted`) %in% mo),
+                                        sum(month(vlog$`2022 Inspection conducted`) %in% mo),
+                                        0),
+                             vlog$Vessel[month(vlog$`2022 Inspection conducted`) %in% mo]),
+                           c("Observations",
+                             sum(flog$marinemammals[month(flog$DateIn) %in% mo] %in% "yes"),
+                             ""),
+                           
+                           
+                           c("Lagging Invidents within the HSE area of responsibility of Orsted","Number","Comments"),
+                           c("Fatality (FAT)",0,""),
+                           c("Lost Time Injury (LTI)",0,""),
+                           c("Lost Workday Case (LWC)",0,""),
+                           c("Restricted Workday Case (RWC)",0,""),
+                           c("Medical Treatment Case (MTC)",0,""),
+                           c("First Aid Case (FAC)",0,""),
+                           c("Potential life changing events for actual incidents (PLCE)",0,""),
+                           c("Near Misses (NM)",0,""),
+                           c("Potential life changing observations (PLCE near miss)",0,""),
+                           c("Environmental incidents C4",0,""),
+                           c("Environmental incidents C5",0,""),
+                           c("All environmental incidents",
+                             ifelse(any(flog$marinedebris[month(flog$DateIn) %in% mo] %in% "yes"), 
+                                    sum(flog$marinedebris[month(flog$DateIn) %in% mo] %in% "yes"), 
+                                    0),
+                             flog$Notes[flog$marinedebris %in% "yes"& month(flog$DateIn) %in% mo]),
+                           c("All other reportable incidents (in accordance with regulations)",0,""),
+                           c("HSE relevant corrective action reports raised on Sites(s). (Open cases)",0,""),
+                           
+                           
+                           c("Other reported items (Decided by project)","Number","Comments"),
+                           c(" ","",""),
+                           c(" ","",""),
+                           c("Report by: (Name/Organization)", "Kaycee Coleman/Rutgers University","")
+                           ))
+```
+
+```{r, include = TRUE, echo=FALSE, out.width='100%', always_allow_html: true} 
+#fig.align = 'center'}
+kable(tout, col.names = NULL) %>%
+  kable_styling() %>%
+  row_spec(c(4,7,16,31), bold = T, background = "lightgrey")
+```
+*For definitions please see Employers HSE Requirements
