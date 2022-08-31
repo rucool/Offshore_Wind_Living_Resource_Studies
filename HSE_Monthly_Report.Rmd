@@ -1,5 +1,6 @@
 ---
 title: "HSE Monthly Report"
+#output: pdf_document
 output: html_document
 #output: word_document
 always_allow_html: true
@@ -42,7 +43,7 @@ vlog$`2022 Inspection conducted` = as.Date(as.numeric(vlog$`2022 Inspection cond
 vlog$`2022 Kickoff or annual meeting` = as.Date(as.numeric(vlog$`2022 Kickoff or annual meeting`), origin = "1899-12-30")
 
 # define month
-mo = 8
+mo = 9
 
 ## make output tables
 # field time
@@ -75,18 +76,24 @@ tout = as.data.frame(rbind(c("Contractor","Rutgers University",""),
                              ifelse(any(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
                                         sum(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
                                         0),
-                             vlog$Vessel[month(vlog$`2022 Kickoff or annual meeting`) %in% mo]),
+                             ifelse(any(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
+                                    vlog$Vessel[month(vlog$`2022 Kickoff or annual meeting`) %in% mo],
+                                    "")),
                            c("HSE meetings completed",
                              ifelse(any(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
                                         sum(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
                                         0),
-                             vlog$Vessel[month(vlog$`2022 Kickoff or annual meeting`) %in% mo]),
+                             ifelse(any(month(vlog$`2022 Kickoff or annual meeting`) %in% mo),
+                                    vlog$Vessel[month(vlog$`2022 Kickoff or annual meeting`) %in% mo],
+                                    "")),
                            c("QHSE walks (senior management walks)",0,""),
                            c("HSE inspections",
                              ifelse(any(month(vlog$`2022 Inspection conducted`) %in% mo),
                                         sum(month(vlog$`2022 Inspection conducted`) %in% mo),
                                         0),
-                             vlog$Vessel[month(vlog$`2022 Inspection conducted`) %in% mo]),
+                             ifelse(any(month(vlog$`2022 Inspection conducted`) %in% mo),
+                                    vlog$Vessel[month(vlog$`2022 Inspection conducted`) %in% mo],
+                                    "")),
                            c("Observations",
                              sum(flog$marinemammals[month(flog$DateIn) %in% mo] %in% "yes"),
                              ""),
@@ -108,7 +115,9 @@ tout = as.data.frame(rbind(c("Contractor","Rutgers University",""),
                              ifelse(any(flog$marinedebris[month(flog$DateIn) %in% mo] %in% "yes"), 
                                     sum(flog$marinedebris[month(flog$DateIn) %in% mo] %in% "yes"), 
                                     0),
-                             flog$Notes[flog$marinedebris %in% "yes"& month(flog$DateIn) %in% mo]),
+                             ifelse(any(flog$marinedebris[month(flog$DateIn) %in% mo] %in% "yes"),
+                                    flog$Notes[flog$marinedebris %in% "yes"& month(flog$DateIn) %in% mo],
+                                    "")),
                            c("All other reportable incidents (in accordance with regulations)",0,""),
                            c("HSE relevant corrective action reports raised on Sites(s). (Open cases)",0,""),
                            
