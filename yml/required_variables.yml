@@ -1,0 +1,6 @@
+clamtows:
+    required: towID, cruise, strata, time, latitude, longitude
+    defined: cruise, towID, speciesID, strata, type, day, month, year, time_of_day, time, latitude, longitude, tow_area, clam_catch_volume, clam_catch_abundance, individual, length
+clam:
+    required: towID, individual, length
+    defined: cruise, towID, speciesID, strata, type, day, month, year, time_of_day, time, latitude, longitude, tow_area, clam_catch_volume, clam_catch_abundance, individual, length
