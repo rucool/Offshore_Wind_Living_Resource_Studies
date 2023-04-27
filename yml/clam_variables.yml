@@ -1,0 +1,49 @@
+cruise:
+    alternates: cruise_id, cruiseid
+towID:
+    alternates: unique_tow_id
+speciesID:
+    alternates:
+strata:
+    alternates:
+type:
+    alternates:
+day:
+    alternates:
+month:
+    alternates:
+year:
+    alternates:
+time_of_day:
+    alternates:
+time:
+    alternates:
+latitude:
+    alternates: lat
+    attributes:
+        units: degrees_north
+longitude:
+    alternates: lon, long
+    attributes:
+        units: degrees_east
+tow_area:
+    alternates: uncorrected_tow_area_kmsq
+    fill: -999
+    attributes:
+         units: km2
+clam_catch_volume:
+    alternates: clam_catch_volume, clam_catch_volume_bu
+    fill: -999
+    attributes:
+        units: bu
+clam_catch_abundance:
+    alternates: total_clams_caught
+    fill: -999
+individual:
+    alternates: clam_#
+    fill: -999
+length:
+    alternates: shell_length_mm
+    fill: -999
+    attributes:
+        units: mm
