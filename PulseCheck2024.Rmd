@@ -4,9 +4,11 @@ header-includes:
 - \usepackage{titling}
 - \pretitle{\begin{right}\LARGE\includegraphics[width=5cm]{~/Downloads/RNBCOOLSEBS/PNG/RNBCOOLSEBS_H_RED_BLACK_RGB.png}\\[\bigskipamount]}
 - \posttitle{\end{center}}
-output: 
-  pdf_document:
-    #toc: true
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: null
 ---
 <style type="text/css">
   body{
@@ -21,7 +23,7 @@ require(ggplot2)
 require(tidyverse)
 
 # import data
-pc <- read_excel("Downloads/2024_Pulse_Check_1734730134.xlsx",skip=2)
+pc <- read_excel("~/Downloads/2024_Pulse_Check_1738172031.xlsx",skip=2)
 names(pc) = c("id","type","seniority","roles","ownership","communication",
               "appreciated","skills","unity","hurdles","hurdles_open",
               "who_i_manage","who_manages_me","well_organized",
@@ -87,6 +89,20 @@ files.sum = files.sum %>%
   mutate(n=as.numeric(n)) %>%
   arrange(n)
 
+# monday
+monday.sum = dplyr::select(pc, type, seniority, monday) %>% 
+  mutate(monday = ifelse(is.na(monday), "Not Applicable", monday)) %>% 
+  group_by(monday, type) %>% 
+  summarize(n=n()) %>% 
+  mutate(n=as.numeric(n),
+         ord = 1,
+         ord = ifelse(monday %in% "I have an account but haven't used it",2,ord),
+         ord = ifelse(monday %in% "I use it and don't like it, I want it to stop",3,ord),
+         ord = ifelse(monday %in% "Neutral",4,ord),
+         ord = ifelse(monday %in% "It's good",5,ord),
+         ord = ifelse(monday %in% "I love it and wish more projects used it",6,ord)) %>%
+  arrange(ord)
+
 # hurdles
 h.sum = as.data.frame(unlist(strsplit(pc$hurdles, ","))) 
 names(h.sum) = c("hurdles")
@@ -128,11 +144,11 @@ who.manages.me.sum = pc %>%
 projects.sum = pc %>%
   group_by(project_dissemination, type) %>% 
   summarize(n=n()) %>%
-  mutate(projects = NA,
+  mutate(projects = "Not applicable",
          projects = ifelse(project_dissemination %in% "Not applicable, I don’t work on multiple projects", "Not applicable", projects),
          projects = ifelse(project_dissemination %in% "As an employee, I’m overcommitted across the projects I work on.   As a manager, I have too many people and projects to manage, and my employees can’t take any more on.", "Overallocated", projects),
          projects = ifelse(project_dissemination %in% "As an employee, I feel no pressure from managers across the projects I work on and there is a healthy balance of my time across my projects.  As a manager, I do not have any concerns regarding balancing our employees across the projects we have right now.", "Neutral", projects),
-         projects = ifelse(project_dissemination %in% "As an employee, I feel I am underutilized and would like to do more in the projects I am currently part of.  As a manager, I feel I need to give more tasks to the employees on the projects I manage to better balance my own workload and feel other managers could do the same.", "Underallocated", projects)) %>% 
+         projects = ifelse(project_dissemination %in% "As an employee, I feel I am underutilized and would like to do more in the projects I am currently part of.   As a manager, I feel I need to give more tasks to the employees on the projects I manage to better balance my own workload and feel other managers could do the same.", "Underallocated", projects)) %>% 
   mutate(ord = 1,
          ord = ifelse(projects %in% "underallocated",2,ord),
          ord = ifelse(projects %in% "Neutral",3,ord),
@@ -149,7 +165,12 @@ balance.sum = pc %>%
          ord = ifelse(balance %in% "Yes",4,ord)) %>%
   arrange(ord)
 ```
-Thank you to everyone who took the time to answer the 2024 Annual RUCOOL Pulse Check. Below are the summarized results. We had `r length(pc$id)` responses, `r pc_sum$faculty` faculty and `r pc_sum$staff` staff.
+
+
+
+
+
+Thank you to everyone who took the time to answer the 2024 Annual RUCOOL Pulse Check. Below are the summarized results. We had `r length(pc$id)` responses (`r (length(pc$id)/30)*100`%), `r pc_sum$faculty` faculty (`r (pc_sum$faculty/10)*100`%) and `r pc_sum$staff` staff (`r (pc_sum$staff/20)*100`%).  Participation was down from last year (81%). Ranking questions scored similar or higher than those in 2023. Tight timelines, over committed, and overallocated are all still hurdles we need to work on. 
 
 # I feel that my roles and responsibilities are well defined
 Average:  `r pc_sum$av.roles` $\pm$ `r format(pc_sum$sd.roles, digits=2)`   
@@ -196,7 +217,7 @@ ggplot() + geom_bar(data = pc, aes(x=appreciated, fill=type), position = "stack"
   scale_fill_manual(values=c("orange","cornflowerblue"))
 ```
 
-# I feel my skill are utilized.
+# I feel my skills are utilized.
 Average:  `r pc_sum$av.skills` $\pm$ `r format(pc_sum$sd.skills, digits=2)`  
 
 ```{r echo=F, message=F, warning=F, fig.height=3}
@@ -239,7 +260,7 @@ The text in this question has been shortened in the figure below:
 
 ```{r echo=F, message=F, warning=F, fig.height=3}
 ggplot() + 
-  geom_bar(data = projects.sum, aes(x=reorder(projects, ord), fill=type), 
+  geom_bar(data = projects.sum, aes(x=reorder(projects, ord), n, fill=type), stat="identity", 
            position = "stack") + 
   xlab("Project Dissemination") + ylab("Number of Times Selected") +
   theme_bw() + theme(legend.position = "bottom")+ 
@@ -247,10 +268,10 @@ ggplot() +
 ```
 
 # Does this statement hold true to your experiences at RUCOOL: I’m experiencing a tragedy of the commons or a lack of respect/fairness/coordination. For employees: I feel there is an imbalance among the team, and some managers are demanding more of my time.
-   
+
 ```{r echo=F, message=F, warning=F, fig.height=3}
 ggplot() + 
-  geom_bar(data = balance.sum, aes(x=reorder(balance, ord), fill=type), 
+  geom_bar(data = balance.sum, aes(x=reorder(balance, ord), n, fill=type), stat = "identity", 
            position = "stack") + 
   xlab("Imbalance") + ylab("Number of Times Selected")+
   theme_bw() + theme(legend.position = "bottom")+ 
@@ -263,7 +284,7 @@ ggplot() +
    
 ```{r echo=F, message=F, warning=F, fig.height=3}
 ggplot() + 
-  geom_bar(data = who.i.manage.sum, aes(x=reorder(who_i_manage, ord), fill=type), 
+  geom_bar(data = who.i.manage.sum, aes(x=reorder(who_i_manage, ord), n, fill=type), stat = "identity", 
            position = "stack") + 
   xlab("Who I Manage is Clear") + ylab("Number of Times Selected")+
   theme_bw() + theme(legend.position = "bottom")+ 
@@ -274,7 +295,7 @@ ggplot() +
   
 ```{r echo=F, message=F, warning=F, fig.height=3}
 ggplot() + 
-  geom_bar(data = who.manages.me.sum, aes(x=reorder(who_manages_me, ord), fill=type), 
+  geom_bar(data = who.manages.me.sum, aes(x=reorder(who_manages_me, ord), n, fill=type), stat = "identity", 
            position = "stack") + 
   xlab("Who Manages Me is Clear") + ylab("Number of Times Selected") +
   theme_bw() + theme(legend.position = "bottom")+ 
@@ -300,60 +321,85 @@ ggplot() +
   geom_point(data = files.sum, aes(x=reorder(files, n), y=n), size = 5) + 
   theme_bw() + 
   theme(legend.position = "bottom") + 
+    theme(axis.text.x = element_text(angle = 25, hjust = 1))  +
   ylab("Number of Times Selected") + xlab("File Management Preference")
+```
+
+# For those using Monday.com for project management, do you like it? 
+15 more seats will be purchased soon to integrate more of the team.   
+```{r echo=F, message=F, warning=F, fig.height=4}
+ggplot() + 
+  geom_bar(data = monday.sum, aes(x=reorder(monday, ord), y=n, fill=type), stat = "identity", 
+           position = "stack") + 
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  ylab("Number of Times Selected") + xlab("Monday.com")+ 
+  theme(legend.position = "bottom")+ 
+  scale_fill_manual(values=c("orange","cornflowerblue"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 # What are your biggest hurdles to completing your work?
 Survey recipients could choose more than one.   
 ```{r echo=F, message=F, warning=F, fig.height=4}
 ggplot() + 
-  geom_point(data = h.sum, aes(x=reorder(hurdles, n), y=hurdle_perc), size = 5) + 
+  geom_point(data = h.sum, aes(x=reorder(hurdles, n), y=n), size = 5) + 
   theme_bw() + 
   theme(legend.position = "bottom") + 
-  ylab("Percent") + xlab("Biggest Hurdles")+ 
-  theme(axis.text.x = element_text(angle = 50, hjust = 1))
+  ylab("Number of Times Selected") + xlab("Biggest Hurdles")+ 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
   
 To expand on the other category, individuals included:  
 
 * Steve's departure  
-* Unsure of future projects/funding    
+* Unsure of future projects/funding. 
+* Allowing people to work more flexible hours would be great!
+* As a faculty the array of responsibilities are quite broad and dynamic with limited time to fully engage in each item with focus. I think this is the nature of being faculty, but means independent research/management staff are required to keep the large group functioning.  
+* REMUS has been a workhorse but has developed serious problems with age and can't be updated due to parts obsolescence. 
+* Techs at RUMFS cannot benefit from technical experience on campus due to relative isolation, inability to go down the hall for a discussion. 
+* Timelines established outside of RUCOOL come from groups with little or no experience with field-oriented programs and assume daily office and contact schedules and thus tight timelines.  
+* Need improved mid-level management to free up more time to pursue our big ideas and noble goals. 
+* I wish some of the software tools and resources available to me were more clearly described, not only in conversations but also written down as a reference document somewhere, e.g. whatever the Baffin server is. 
+* RUCOOL has grown to a fantatic team of faculty staff and students.  That growth has enabled (or is due to) a broader range of projects.  All utilizing ocean technologies.  The down side is that there are a lot of great things to do and limited time to do them.  How best to prioritize effort?  
+* Tight timelines and commitments that are only possible to meet by working overtime/weekends - which isn't something that is compensated for.
+* Tight timelines and project requirements (e.g. continuous monitoring) that is compounded by lack of vessels (or approved vessels, eg orsted) and/or bad weather. This all adds extra stress and overtime/weekend work and also impacts other projects that have to get de-prioritized.
+* A big hurdle is a lack of defined roles for many in the group. Who are considered managers, who can assign tasks to whom, is there a chain so that roles aren't getting stepped over which can lead to confusion or extra stress or  unnecessary convolution. Once roles are defined (to the larger group), working to respect and trust those in each role would reduce project micromanagement and lack of project management (depending on project and PI) 
+* Gliders are engrossing, physically and emotionally.  Its a stressful occupation. 
+* I think with having new lab management positions just starting, this will help with organizing tasks, meeting project deadlines, and improve communication between team members involved in the different projects.
+
 
 # Team goals that people would like to work on include:  
-
 * Increase team cohesion, visibility, and coordination.   
 * Getting more stable funding for operations and teaching.  
+* Improve communication and better defining roles and management/supervision assignments. Better defining employees roles to the group  
+* Efficiency and multi-disciplinary, pigeon holed roles are not healthy for so small a group.  
+* Fairness across the positions.
+* Working as a large team instead of always being individual subsets (hardware, software, etc).
+* Better integration of our students and staff.  
+* How do we balance the time commitment needed to be a teaching and experiential ocean observing network? 
+* Technology innovation as an enabler of pathfinding research and unique educational opportunities. 
+* Development of a communication structure for the new Coastal Campus 
+* Growing the shared vision and mission of RUCOOL to enable more buy-in across the group. 
+* Identifying science that aligns with that vision and balancing both proposals and publication with a more engaged student   
+* It would be great if there were more opportunities to help with other projects more easily!  
 
 # Ending on a high note, below are what the team believes are our biggest accomplishments of 2024. 
 
-* Caribbean hurricane research. 
-* Team TOS award. 
-* How the glider team manages to accomplish so many projects. 
-* Great year for publications.  
+* Caribbean hurricane research  
+* External recognition (the many awards) that is seen as so valuable within Rutgers.  Recognition at OSM.   
+* Team TOS award (which includes recognition of the broader RUCOOL, not just Faculty)  
+* How the glider team manages to accomplish so many projects  
+* Great year for publications   
+* Improving employee appreciation  
+* Innovation (glider deployments/recoveries) 
+* Progress in managment of long term projects with lots of moving parts (e.g. RMI)  
+* Strong showing and integration of leadership at State and higher levels investigating offshore wind effects.    
+* The people!  The effort and pride everyone puts into the wide range of projects RUCOOL is conducting.  
+* New projects   
+* Student graduations 
+* Staying together!   
+* Our greatest accomplishment has been in the small things of team cohesion, individual growth of staff members, normalizing certain meetings and structures. These small quality of life changes will continue to lead to our success over decades not years.    
 
-  
+
 # THANK YOU EVERYONE FOR ALL THE HARD WORK YOU DO! 
-
-```{r echo=F, message=F, warning=F}
-# # success
-# # word cloud
-#library(wordcloud)
-#library(RColorBrewer)
-#library(wordcloud2)
-#require(tm)
-#Create a vector containing only the text
-#text <- data$text
-# Create a corpus  
-#docs <- Corpus(VectorSource(text))
-# #matrix
-#dtm <- TermDocumentMatrix(docs) 
-#matrix <- as.matrix(dtm) 
-# words <- sort(rowSums(matrix),decreasing=TRUE) 
-# df <- data.frame(word = names(words),freq=words)
-# #cloud
-# wordcloud(words = df$word, freq = df$freq, min.freq = 1,           
-#           max.words=200, random.order=FALSE, rot.per=0.35,            
-#           colors=brewer.pal(8, "Dark2"))
-```
-
-
