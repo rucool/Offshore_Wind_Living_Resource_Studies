@@ -132,6 +132,7 @@ ru34_m5_tags2$mission = 5
 tags = bind_rows(dplyr::select(ru34_m1_tags2, -MISSION_ID, -match_time) %>% mutate(mission=1), 
                  u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2)
              
+tags$species = NA
 tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "cod"], "cod", species))
 tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "external sync"], "cod", species))
 gvmt$species = "glider"
@@ -146,6 +147,23 @@ p + geom_point(data = tags %>% filter(species %in% "cod"),
   labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
 
 
+p + geom_point(data = tags %>% filter(species %in% "cod"), 
+                      aes(x=longitude, y=latitude, col=mission, shape = as.character(mission)))+
+  facet_wrap(~Transmitter)+
+  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")+
+  theme_bw()
+
+ggplot() + geom_point(data = tags %>% filter(species %in% "cod"), 
+               aes(x=longitude, y=latitude, col=mission, shape = as.character(mission)))+
+  facet_wrap(~Transmitter, scales = "free")+
+  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")+
+  theme_bw()
+
+
+tag_list = unique(tags$Transmitter[tags$species %in% "cod"])
+ggplot() + geom_point(data = tags[tags$Transmitter %in% tag_list[11],], 
+               aes(x=longitude, y=latitude, col=Transmitter, shape = as.character(mission)))+
+  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
 #---------------#
 # plots
 #---------------#
