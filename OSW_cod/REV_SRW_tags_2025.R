@@ -9,50 +9,83 @@ library(raster)
 library(ggplot2)
 library(sf)
 library(data.table)
+library(readxl)
+library(purrr)
 #---------------#
 
 # --------------- #
 # import data
 # --------------- #
-# lease boundaries
-leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_1/",
-                 layer = "Wind_Lease_Outlines_2_2023")
+### lease boundaries
+#leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_1/", layer = "Wind_Lease_Outlines_2_2023")
+leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_0/", layer = "BOEM_Wind_Lease_Outlines_06_06_2024")
 REV = leases[leases$LEASE_NUMB %in% "OCS-A 0486",]
 SRW = leases[leases$LEASE_NUMB %in% "OCS-A 0487",]
 SFW = leases[leases$LEASE_NUMB %in% "OCS-A 0517",]
 rm(leases)
 p = ggplot() + 
   geom_sf(data = REV, fill=NA) + 
-  geom_sf(data = SFW, col="cornflowerblue", fill=NA) + 
+  geom_sf(data = SFW[1,], col="cornflowerblue", fill=NA) + 
   geom_sf(data = SRW, col="orange", fill=NA) + theme_bw()
 #p 
 
-# import known cod tags
+#### import known tags
 FreyTags <- read_excel("Downloads/FreyAllSMASTTags.xlsx")
-ru34_mission1_tags = read_csv("Downloads/ru34-20241102T1737-rxlive-detectionsonly.csv")
-#unit1190_mission2_tags = read_csv("Downloads/.csv")
-#ru34_mission3_tags = read_csv("Downloads/.csv")
-#unit1190_mission4_tags = read_csv("Downloads/.csv")
+gvmt = read_csv("Downloads/glider_vmt_transmitters.csv")
+cfrf = read_excel("Downloads/Orsted_leases_sync_tags.xlsx")
 
-# create tag date time
-ru34_mission1_tags$date_time = as.POSIXct(ru34_mission1_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
-ru34_mission1_tags = dplyr::select(ru34_mission1_tags, date_time, Transmitter, MISSION_ID)
+### import glider tags
+laura_tag_summary = read_csv("Downloads/Orsted cod - tag detections/orstedcod_detectionsummary.txt") 
+ru34_m1_tags = read_csv("Downloads/Orsted cod - tag detections/ru34-20241102T1737-rxlive-detectionsonly.csv") 
+u1190_m2_tags = read_csv("Downloads/Orsted cod - tag detections/revcod_qualified_detections_2024.csv")
+ru34_m3_tags = read_csv("Downloads/Orsted cod - tag detections/ru34-20250113T1244-rxlive-detectionsonly.csv") 
+u1190_m4_tags = read_csv("Downloads/Orsted cod - tag detections/VUE_Export_unit_1190-20250224T1405.csv") 
+ru34_m5_tags = read_csv("Downloads/Orsted cod - tag detections/ru34-20250311T1220-rxlive-detectionsonly.csv") 
 
-# match tag time to position
-ru34_mission1_path = read_csv("Downloads/ru34-20241102T1737-trajectory-raw-delayed_95c2_7988_89a9.csv", skip=1)
-names(ru34_mission1_path) = c("date_time", "latitude", "longitude", "depth") #UTC, m 
-ru34_mission1_path$date_time =  as.POSIXct(ru34_mission1_path$date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
-ru34_mission1_path = unique(ru34_mission1_path) #remove dups
-ru34_mission1_path = st_as_sf(ru34_mission1_path, coords = c("longitude", "latitude"), 
-                              crs = 4326, remove = FALSE) 
+### create tag date time
+ru34_m1_tags$date_time = as.POSIXct(ru34_m1_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+ru34_m1_tags = dplyr::select(ru34_m1_tags, date_time, Transmitter, MISSION_ID)
+
+ru34_m3_tags$date_time = as.POSIXct(ru34_m3_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+ru34_m3_tags = dplyr::select(ru34_m3_tags, date_time, Transmitter)
+
+u1190_m4_tags$date_time = as.POSIXct(u1190_m4_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+u1190_m4_tags = dplyr::select(u1190_m4_tags, date_time, Transmitter)
+
+ru34_m5_tags$date_time = as.POSIXct(ru34_m5_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+ru34_m5_tags = dplyr::select(ru34_m5_tags, date_time, Transmitter)
+
+### match tag time to position
+ru34_m1_path = read_csv("Downloads/ru34-20241102T1737-trajectory-raw-delayed_95c2_7988_89a9.csv", skip=1)
+names(ru34_m1_path) = c("date_time", "latitude", "longitude", "depth") #UTC, m 
+ru34_m1_path$date_time =  as.POSIXct(ru34_m1_path$date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+ru34_m1_path = unique(ru34_m1_path) #remove dups
+#ru34_mission1_path = st_as_sf(ru34_mission1_path, coords = c("longitude", "latitude"), 
+#                              crs = 4326, remove = FALSE) 
+
 #unit1190_mission2_path = read_csv('~/Downloads/unit_1190-20241218T1433-trajectory-raw-delayed_07d8_cb64_24fa.kml')
-#ru34_mission3_path = read_csv('~/Downloads/.kml')
-#unit1190_mission4_path = read_csv('~/Downloads/.kml')
+
+ru34_m3_path = read_csv("Downloads/ru34-20250113T1244-trajectory-raw-delayed_60f3_f6e7_77a8.csv", skip=1)
+names(ru34_m3_path) = c("date_time", "latitude", "longitude", "depth") #UTC, m 
+ru34_m3_path$date_time =  as.POSIXct(ru34_m3_path$date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+ru34_m3_path = unique(ru34_m3_path) #remove dups
+
+u1190_m4_path = read_csv("Downloads/unit_1190-20250224T1405-trajectory-raw-delayed_08b7_b81d_e54b.csv", skip=1)
+names(u1190_m4_path) = c("date_time", "latitude", "longitude", "depth") #UTC, m 
+u1190_m4_path$date_time =  as.POSIXct(u1190_m4_path$date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+u1190_m4_path = unique(u1190_m4_path) #remove dups
+
+ru34_m5_path = read_csv("Downloads/ru34-20250311T1220-trajectory-raw-rt_490c_c8b2_edb6.csv", skip=1)
+names(ru34_m5_path) = c("date_time", "latitude", "longitude", "depth") #UTC, m 
+ru34_m5_path$date_time =  as.POSIXct(ru34_m5_path$date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+ru34_m5_path = unique(ru34_m5_path) #remove dups
+
+
 
 # filter to first day in the water
-ru34_mission1_tags = filter(ru34_mission1_tags, 
-                            date_time >= min(ru34_mission1_path$date_time) & 
-                            date_time <= max(ru34_mission1_path$date_time))
+ru34_m1_tags = filter(ru34_m1_tags, 
+                      date_time >= min(ru34_m1_path$date_time) & 
+                        date_time <= max(ru34_m1_path$date_time))
 
 # combine detection with location
 find_nearest_date <- function(date, date_match){  
@@ -69,8 +102,17 @@ find_nearest_date_worker <- function(date, date_vector) {
   return(x)
 }
 
-ru34_mission1_tags$match_time = find_nearest_date(ru34_mission1_tags$date_time, ru34_mission1_path$date_time)
-ru34_mission1_tags = left_join(ru34_mission1_tags, ru34_mission1_path, by =c("match_time","date_time"))
+ru34_m1_tags$match_time = find_nearest_date(ru34_m1_tags$date_time, ru34_m1_path$date_time)
+ru34_m1_tags2 = left_join(ru34_m1_tags, ru34_m1_path, by =c("match_time"="date_time"))
+
+ru34_m3_tags$match_time = find_nearest_date(ru34_m3_tags$date_time, ru34_m3_path$date_time)
+ru34_m3_tags2 = left_join(ru34_m3_tags, ru34_m3_path, by =c("match_time"="date_time"))
+
+u1190_m4_tags$match_time = find_nearest_date(u1190_m4_tags$date_time, u1190_m4_path$date_time)
+u1190_m4_tags2 = left_join(u1190_m4_tags, u1190_m4_path, by =c("match_time"="date_time"))
+
+ru34_m5_tags$match_time = find_nearest_date(ru34_m5_tags$date_time, ru34_m5_path$date_time)
+ru34_m5_tags2 = left_join(ru34_m5_tags, ru34_m5_path, by =c("match_time"="date_time"))
 
 # 
 # # creating more matches than tag times
@@ -79,8 +121,29 @@ ru34_mission1_tags = left_join(ru34_mission1_tags, ru34_mission1_path, by =c("ma
 # setkey(ru34_mission1_path, date_time)
 # setkey(ru34_mission1_tags, date_time)
 # ru34_mission1_tag_coords <-ru34_mission1_path[ru34_mission1_tags, roll = "nearest", mult = "all"]
+u1190_m2_tags2 = dplyr::select(u1190_m2_tags, datecollected, fieldnumber, latitude, longitude) %>%
+  rename(date_time = datecollected, Transmitter = fieldnumber) %>%
+  mutate(date_time = as.POSIXct(date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
+u1190_m2_tags2$mission = 2
+ru34_m3_tags2$mission = 3
+u1190_m4_tags2$mission = 4
+ru34_m5_tags2$mission = 5
 
-p + geom_point(data = ru34_mission1_tags, aes(x=Longitude, y=Latitude, col=Transmitter))
+tags = bind_rows(dplyr::select(ru34_m1_tags2, -MISSION_ID, -match_time) %>% mutate(mission=1), 
+                 u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2)
+             
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "cod"], "cod", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "external sync"], "cod", species))
+gvmt$species = "glider"
+tags = mutate(tags, species = ifelse(Transmitter %in% gvmt$TransmitterID, "glider", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% cfrf$ID, "cfrf", species))
+
+
+p + geom_point(data = ru34_m1_tags2, aes(x=longitude, y=latitude, col=Transmitter))
+
+p + geom_point(data = tags %>% filter(species %in% "cod"), 
+               aes(x=longitude, y=latitude, col=Transmitter, shape = as.character(mission)))+
+  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
 
 
 #---------------#
