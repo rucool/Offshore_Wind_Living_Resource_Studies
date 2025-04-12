@@ -11,6 +11,7 @@ library(sf)
 library(data.table)
 library(readxl)
 library(purrr)
+library(stringr)
 #---------------#
 
 # --------------- #
@@ -23,11 +24,6 @@ REV = leases[leases$LEASE_NUMB %in% "OCS-A 0486",]
 SRW = leases[leases$LEASE_NUMB %in% "OCS-A 0487",]
 SFW = leases[leases$LEASE_NUMB %in% "OCS-A 0517",]
 rm(leases)
-p = ggplot() + 
-  geom_sf(data = REV, fill=NA) + 
-  geom_sf(data = SFW[1,], col="cornflowerblue", fill=NA) + 
-  geom_sf(data = SRW, col="orange", fill=NA) + theme_bw()
-#p 
 
 #### import known tags
 FreyTags <- read_excel("Downloads/FreyAllSMASTTags.xlsx")
@@ -130,123 +126,167 @@ u1190_m4_tags2$mission = 4
 ru34_m5_tags2$mission = 5
 
 tags = bind_rows(dplyr::select(ru34_m1_tags2, -MISSION_ID, -match_time) %>% mutate(mission=1), 
-                 u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2)
+                 u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2) %>%
+  filter(date_time > as.POSIXct("2024-11-01 12:00:00", format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
              
-tags$species = NA
+tags$species = "unknown"
 tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "cod"], "cod", species))
-tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "external sync"], "cod", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "Black sea Bass"], "BSB", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "Fluke"], "SF", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "Striped Bass"], "SB", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "VR2TX internal sync"], "sync tag", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "external sync"], "sync tag", species))
 gvmt$species = "glider"
 tags = mutate(tags, species = ifelse(Transmitter %in% gvmt$TransmitterID, "glider", species))
-tags = mutate(tags, species = ifelse(Transmitter %in% cfrf$ID, "cfrf", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% str_trim(cfrf$ID), "sync tag", species))
+#---------------#
 
-
-p + geom_point(data = ru34_m1_tags2, aes(x=longitude, y=latitude, col=Transmitter))
-
-p + geom_point(data = tags %>% filter(species %in% "cod"), 
-               aes(x=longitude, y=latitude, col=Transmitter, shape = as.character(mission)))+
-  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
-
-
-p + geom_point(data = tags %>% filter(species %in% "cod"), 
-                      aes(x=longitude, y=latitude, col=mission, shape = as.character(mission)))+
-  facet_wrap(~Transmitter)+
-  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")+
-  theme_bw()
-
-ggplot() + geom_point(data = tags %>% filter(species %in% "cod"), 
-               aes(x=longitude, y=latitude, col=mission, shape = as.character(mission)))+
-  facet_wrap(~Transmitter, scales = "free")+
-  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")+
-  theme_bw()
-
-
-tag_list = unique(tags$Transmitter[tags$species %in% "cod"])
-ggplot() + geom_point(data = tags[tags$Transmitter %in% tag_list[11],], 
-               aes(x=longitude, y=latitude, col=Transmitter, shape = as.character(mission)))+
-  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
 #---------------#
 # plots
 #---------------#
-# custom colors
-colpal = c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00",
-           "#CAB2D6","#6A3D9A","#FFFF99","yellow2","#B15928","gold4","lightgrey","darkgrey")
+## custom colors
+#colpal = c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00",
+#           "#CAB2D6","#6A3D9A","#FFFF99","yellow2","#B15928","gold4","lightgrey","darkgrey")
 # library(ggplot2)
+#p + geom_point(data = ru34_m1_tags2, aes(x=longitude, y=latitude, col=Transmitter))
+
+p = ggplot() + 
+  geom_sf(data = REV, fill=NA) + 
+  geom_sf(data = SFW[1,], col="cornflowerblue", fill=NA) + 
+  geom_sf(data = SRW, col="orange", fill=NA) + 
+  theme_bw()
+#p 
+
+p4 = p + geom_point(data = tags %>% filter(species %in% "cod"), 
+               aes(x=longitude, y=latitude, col=Transmitter)) + #, shape = as.character(mission)))+
+  labs(title="Cod Detections", x="Longitude", y="Longitude") + #, shape="Mission")
+  theme_bw() + 
+  theme(legend.position = "bottom", 
+        axis.text = element_text(size = 13), 
+        legend.text = element_text(size = 7)) 
+p4
+ggsave("REV_SRW_2425_spatial_tags.png",p4)
+
+p6 = p + geom_point(data = tags %>% filter(species %in% "cod"), 
+               aes(x=longitude, y=latitude, col=Transmitter))+
+  facet_wrap(~Transmitter)+
+  labs(title="Cod Detections",x="Longitude",y="Longitude",shape="Mission")+
+  theme_bw() + 
+  theme(text = element_text(size=12), 
+        legend.position = "none",
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+p6
+ggsave("REV_SRW_2425_cod_tags_lease.png",p6, dpi=320)
+
+p5 = ggplot() + geom_point(data = tags %>% filter(species %in% "cod"), 
+                      aes(x=longitude, y=latitude, col=date_time, shape = as.character(mission)))+
+  facet_wrap(~Transmitter, scales = "free")+
+  labs(title="Cod Detections", x="Longitude", y="Longitude", 
+       shape="Mission", col = "Date")+
+  theme_bw() + 
+  theme(text = element_text(size=12), 
+        legend.position = "bottom") 
+p5
+ggsave("REV_SRW_2425_cod_space_time.png",p5, dpi=320)
+
+z = tags[tags$Transmitter %in% "A69-1602-58805",]
+
+tag_list = unique(tags$Transmitter[tags$species %in% "cod"])
+ggplot() + geom_point(data = tags[tags$Transmitter %in% tag_list[11],], 
+                      aes(x=longitude, y=latitude, col=Transmitter, shape = as.character(mission)))+
+  labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
 
 # Tag v Date
-x = detections2 %>% 
+x = tags %>% 
+  filter(!species %in% "glider") %>%
   mutate(mo = month(date_time)) %>%
-  group_by(mo, Species) %>%
-  summarise(n=n())
-y = detections2 %>% 
-  mutate(mo = month(date_time)) %>%
-  group_by(mo, TagID, Species) %>%
+  group_by(mo, species) %>%
   summarise(n=n()) %>%
-  group_by(mo,Species) %>%
-  summarise(n=n())
+  mutate(m = NA, 
+         m = ifelse(mo %in% 11, "Nov.", m),
+         m = ifelse(mo %in% 12, "Dec.", m),
+         m = ifelse(mo %in% 1, "Jan.", m),
+         m = ifelse(mo %in% 2, "Feb.", m),
+         m = ifelse(mo %in% 3, "Mar.", m),
+         o = NA, 
+         o = ifelse(mo %in% 11, 1, o),
+         o = ifelse(mo %in% 12, 2, o),
+         o = ifelse(mo %in% 1, 3, o),
+         o = ifelse(mo %in% 2, 4, o),
+         o = ifelse(mo %in% 3, 5, o))
+y = tags %>%
+  filter(!species %in% "glider") %>%
+  mutate(mo = month(date_time)) %>%
+  group_by(mo, Transmitter, species) %>%
+  summarise(n=n()) %>%
+  group_by(mo, species) %>%
+  summarise(n=n())  %>%
+  mutate(m = NA, 
+         m = ifelse(mo %in% 11, "Nov.", m),
+         m = ifelse(mo %in% 12, "Dec.", m),
+         m = ifelse(mo %in% 1, "Jan.", m),
+         m = ifelse(mo %in% 2, "Feb.", m),
+         m = ifelse(mo %in% 3, "Mar.", m),
+         o = NA, 
+         o = ifelse(mo %in% 11, 1, o),
+         o = ifelse(mo %in% 12, 2, o),
+         o = ifelse(mo %in% 1, 3, o),
+         o = ifelse(mo %in% 2, 4, o),
+         o = ifelse(mo %in% 3, 5, o))
 
 p0a = ggplot()+
-  geom_bar(data = x, aes(x=mo,y=n,fill=Species), 
+  geom_bar(data = x, aes(x=reorder(m,o), y=n, fill=species), 
            stat="identity", position = position_stack(reverse = TRUE),col="black") +
   theme_bw() +
   xlab("Month") + ylab("Number of Detections")+
-  scale_fill_manual(values = c("#A6CEE3","#1F78B4"))+
+  scale_fill_manual(values = c("#A6CEE3","#1F78B4","grey"))+
   theme(legend.position="none", 
         text = element_text(size = 15)) 
 p0a
 p0b = ggplot()+
-  geom_bar(data = y, aes(x=mo,y=n,fill=Species), 
+  geom_bar(data = y, aes(x=reorder(m, o), y=n, fill=species), 
            stat="identity", position = position_stack(reverse = TRUE),col="black") +
   theme_bw() +
   xlab("Month") + ylab("Unique Tags Detected")+
-  scale_fill_manual(values = c("#A6CEE3","#1F78B4"))+
+  scale_fill_manual(values = c("#A6CEE3","#1F78B4","grey"))+
   theme(legend.position="bottom", 
-        text = element_text(size = 15)) +
-  scale_x_date(date_labels = "%b") 
+        text = element_text(size = 15))# +
+  #scale_x_date(date_labels = "%b") 
 p0b
 
 #library(cowplot)
 p0c = plot_grid(p0a, p0b, labels = "AUTO",ncol=1)
 p0c
+ggsave("REV_SRW_2425_tag_month_hist.png",p0c)
 
 # Tag v Date
 p1 = ggplot()+
-  geom_point(data = detections, aes(x=date,TagID,shape=Species),size=6, col="black")+
-  geom_point(data = detections, aes(x=date,TagID,col=TagID,shape=Species),size=5)+
+  geom_point(data = tags %>% filter(species %in% "cod"), 
+             aes(x = date_time, Transmitter), size=5, col="black")+
+  geom_point(data = tags %>% filter(species %in% "cod"), 
+             aes(x = date_time, Transmitter, col = Transmitter),size=4)+
   theme_bw() +
   xlab("Date") + ylab("Tag ID")+
   guides(color="none") + 
-  theme(legend.position="bottom", 
-        text = element_text(size = 15)) + 
-  scale_x_date(date_labels = "%b %d") + 
-  scale_colour_manual(values = colpal)
+  theme(legend.position="none", 
+        text = element_text(size = 15)) #+ 
+  #scale_x_date(date_labels = "%b %d") + 
+ # scale_colour_manual(values = colpal)
 p1
 #ggsave("REV_tag_date.png",p1)
 
 p0 = plot_grid(p0c, p1, labels = c("","C"))
 p0
-ggsave("REV_tag_month.png",p0)
+ggsave("REV_SRW_2425_tag_month.png",p0)
 
 # Tag v Time
-x = filter(detections2, TagID %in% "A69-1601-60951") 
-p2 = ggplot()+ 
-  theme_bw()+
-  geom_rect(data = ss,(aes(xmin = sunrise_time, xmax=sunset_time,  
-                           ymax= 0, ymin = -max(x$depth, na.rm=TRUE))), fill = "grey") +
-  #geom_boxplot(data = x, aes(x=date_time, y=-depth)) +
-  geom_point(data = x, aes(x=date_time, y=-depth)) +
-  ylab("Depth (m)") + 
-  xlab("Time (EST)") + 
-  xlim(c(min(x$date_time), xmax = max(x$date_time)))
-p2
-ggsave("REV_tagA69-1602-58755_time.png",p2)
-
-# Tag v Time
-x = group_by(detections2, TagID, date_time) 
+x = tags %>% filter(species %in% "cod") %>% group_by(Transmitter, date_time) 
 #y = filter(ru34, date(date_time) %in% date(x$date_time) & hour(date_time) %in% hour(x$date_time))
-p3 = ggplot(x, aes(x=date_time, y=-depth, col=TagID, pch=Species), size=5)+ 
+p3 = ggplot(x, aes(x=date_time, y=-depth, col=Transmitter), size=5)+ 
   geom_point()+
   #facet_wrap(date(x$date_time), scales="free") + 
-  facet_wrap(~TagID+date(date_time), scales="free_x", ncol=7) + 
+  facet_wrap(~Transmitter + date(date_time), scales="free_x", ncol=7) + 
   theme_bw() +
   ylab("Depth (m)") + 
   xlab("Time (EST)") +
@@ -254,75 +294,75 @@ p3 = ggplot(x, aes(x=date_time, y=-depth, col=TagID, pch=Species), size=5)+
   theme(legend.position="bottom") #+ 
 #geom_point(data = y, aes(x=date_time, y=-depth), pch=1)
 p3
-ggsave("REV_time.png",p3)
+ggsave("REV_SRW_2425_depth_time.png",p3)
 
-# spatial
-#library(RColorBrewer)
-p4 = ggplot() + 
-  geom_polygon(data = REV, aes(x=long, y=lat, group=group), fill="lightcyan1") +
-  geom_path(data = spldf, aes(x=long, y=lat, group=group), col="snow3") +
-  geom_point(data = detections2, aes(x=longitude, y=latitude, pch = Species), col= "black", size=6)+
-  geom_point(data = detections2, aes(x=longitude, y=latitude, col = TagID, pch = Species), size=5) +
-  scale_colour_manual(values = colpal) + 
-  theme_bw()+
-  labs(x="Longitude", y="Latitude") + 
-  theme(text = element_text(size = 15),
-        legend.position="bottom")
-#scale_color_brewer(palette = "Paired")
-p4
-ggsave("REV_track_tags.png",p4)
-
-taglist = unique(detections2$TagID)
-taglist = sort(taglist)
-for (a in 1:16){
-  td = filter(detections2,TagID %in% taglist[a])
-  ts = ifelse(td$Species[1] %in% "Unknown",17,16)
-  ts2 = ifelse(td$Species[1] %in% "Unknown",2,1)
-  pp1 = ggplot() + 
-    geom_polygon(data = REV, aes(x=long, y=lat, group=group), fill="lightcyan1") +
-    geom_path(data = spldf, aes(x=long, y=lat, group=group), col="snow3") +
-    geom_point(data = td, aes(x=longitude, y=latitude, col = TagID), pch = ts, size=5) +
-    geom_point(data = td, aes(x=longitude, y=latitude), pch=ts2, col= "black", size=5)+
-    scale_colour_manual(values = colpal[a]) + 
-    theme_bw()+
-    labs(x="", y="Latitude") + 
-    theme(text = element_text(size = 15), legend.position="none")
-  #pp1
-  pp2= ggplot() +  
-    #geom_polygon(data = REV, aes(x=long, y=lat, group=group), fill="lightcyan1") +
-    geom_path(data = spldf, aes(x=long, y=lat, group=group), col="snow3") +
-    geom_point(data = td, aes(x=longitude, y=latitude, col = TagID), pch = ts, size=5) +
-    geom_point(data = td, aes(x=longitude, y=latitude), pch=ts2, col= "black", size=5)+
-    scale_colour_manual(values = colpal[a]) + 
-    theme_bw()+
-    labs(x="Longitude", y="Latitude") + 
-    theme(text = element_text(size = 15),
-          axis.text.x = element_text(angle=45),
-          legend.position="bottom") +
-    ylim(min(td$latitude, na.rm=TRUE)-0.0003, max(td$latitude, na.rm=TRUE)+0.0003) + 
-    xlim(min(td$longitude, na.rm=TRUE)-0.0003,max(td$longitude, na.rm=TRUE)+0.0003) +
-    coord_fixed()
-  #pp2
-  
-  pp3 = ggplot() +
-    geom_point(data = td, aes(x=date_time, y=-depth, col = TagID), pch = ts, size=5) +
-    geom_point(data = td, aes(x=date_time, y=-depth), pch = ts2, col="black", size=5) +
-    scale_colour_manual(values = colpal[a]) + 
-    theme_bw() + 
-    theme(text = element_text(size = 15), legend.position="none") + 
-    labs(x="Date and/or Time", y="Depth (m)") 
-  pp3
-  
-  pp4 = plot_grid(pp2, pp3, labels = "")
-  pp4
-  
-  pp5 = plot_grid(pp1, pp4, labels = "", ncol=1)
-  pp5
-  
-  ggsave(paste("REV_track_tags_",td$TagID[1],".png", sep=""),pp3)
-}
-#---------------#
-
+# # spatial
+# #library(RColorBrewer)
+# p4 = ggplot() + 
+#   geom_polygon(data = REV, aes(x=long, y=lat, group=group), fill="lightcyan1") +
+#   geom_path(data = spldf, aes(x=long, y=lat, group=group), col="snow3") +
+#   geom_point(data = detections2, aes(x=longitude, y=latitude, pch = Species), col= "black", size=6)+
+#   geom_point(data = detections2, aes(x=longitude, y=latitude, col = TagID, pch = Species), size=5) +
+#   scale_colour_manual(values = colpal) + 
+#   theme_bw()+
+#   labs(x="Longitude", y="Latitude") + 
+#   theme(text = element_text(size = 15),
+#         legend.position="bottom")
+# #scale_color_brewer(palette = "Paired")
+# p4
+# ggsave("REV_track_tags.png",p4)
+# 
+# taglist = unique(detections2$TagID)
+# taglist = sort(taglist)
+# for (a in 1:16){
+#   td = filter(detections2,TagID %in% taglist[a])
+#   ts = ifelse(td$Species[1] %in% "Unknown",17,16)
+#   ts2 = ifelse(td$Species[1] %in% "Unknown",2,1)
+#   pp1 = ggplot() + 
+#     geom_polygon(data = REV, aes(x=long, y=lat, group=group), fill="lightcyan1") +
+#     geom_path(data = spldf, aes(x=long, y=lat, group=group), col="snow3") +
+#     geom_point(data = td, aes(x=longitude, y=latitude, col = TagID), pch = ts, size=5) +
+#     geom_point(data = td, aes(x=longitude, y=latitude), pch=ts2, col= "black", size=5)+
+#     scale_colour_manual(values = colpal[a]) + 
+#     theme_bw()+
+#     labs(x="", y="Latitude") + 
+#     theme(text = element_text(size = 15), legend.position="none")
+#   #pp1
+#   pp2= ggplot() +  
+#     #geom_polygon(data = REV, aes(x=long, y=lat, group=group), fill="lightcyan1") +
+#     geom_path(data = spldf, aes(x=long, y=lat, group=group), col="snow3") +
+#     geom_point(data = td, aes(x=longitude, y=latitude, col = TagID), pch = ts, size=5) +
+#     geom_point(data = td, aes(x=longitude, y=latitude), pch=ts2, col= "black", size=5)+
+#     scale_colour_manual(values = colpal[a]) + 
+#     theme_bw()+
+#     labs(x="Longitude", y="Latitude") + 
+#     theme(text = element_text(size = 15),
+#           axis.text.x = element_text(angle=45),
+#           legend.position="bottom") +
+#     ylim(min(td$latitude, na.rm=TRUE)-0.0003, max(td$latitude, na.rm=TRUE)+0.0003) + 
+#     xlim(min(td$longitude, na.rm=TRUE)-0.0003,max(td$longitude, na.rm=TRUE)+0.0003) +
+#     coord_fixed()
+#   #pp2
+#   
+#   pp3 = ggplot() +
+#     geom_point(data = td, aes(x=date_time, y=-depth, col = TagID), pch = ts, size=5) +
+#     geom_point(data = td, aes(x=date_time, y=-depth), pch = ts2, col="black", size=5) +
+#     scale_colour_manual(values = colpal[a]) + 
+#     theme_bw() + 
+#     theme(text = element_text(size = 15), legend.position="none") + 
+#     labs(x="Date and/or Time", y="Depth (m)") 
+#   pp3
+#   
+#   pp4 = plot_grid(pp2, pp3, labels = "")
+#   pp4
+#   
+#   pp5 = plot_grid(pp1, pp4, labels = "", ncol=1)
+#   pp5
+#   
+#   ggsave(paste("REV_track_tags_",td$TagID[1],".png", sep=""),pp3)
+# }
+# #---------------#
+# 
 
 #---------------#
 # cod in REV in 2024 spawning season and 2025 spawning season
