@@ -4,6 +4,7 @@ require(lubridate)
 require(readr)
 require(cmocean)
 require(ggpubr)
+require(dplyr)
 
 # load data
 # mission 1: ru34-20241102T1737
@@ -13,19 +14,20 @@ require(ggpubr)
 # mission 5: ru34-20250311T1220
 
 # mission 1: ru34-20241102T1737
-ru34_sci_nov24 = read_csv("~/Downloads/ru34-20241102T1737-profile-sci-delayed_9cd0_d462_d3b3.csv", skip=1)
-names(ru34_sci_nov24) = c("date_time","latitude","longitude","depth", 
-                          "cdom","chl","alt","pitch","roll","oxy","pressure",
-                          "sal", "temp", "u", "v", "wdep")
-ru34_sci_nov24$date_time <- as.POSIXct(ru34_sci_nov24$date_time,tz="UTC") # define as UTC
+ru34_sci_nov24 = read_csv("~/Downloads/ru34-20241102T1737-profile-sci-delayed_0430_fc1f_8714.csv")   # ru34-20241102T1737-profile-sci-delayed_9cd0_d462_d3b3.csv", skip=1)
+ru34_sci_nov24 = ru34_sci_nov24[-1,]
+#names(ru34_sci_nov24) = c("date_time","latitude","longitude","depth", 
+#                          "cdom","chl","alt","pitch","roll","oxy","pressure",
+#                          "sal", "temp", "u", "v", "wdep")
+ru34_sci_nov24$date_time <- as.POSIXct(gsub("T", "", ru34_sci_nov24$time),tz="UTC") # define as UTC
 ru34_sci_nov24 = unique(ru34_sci_nov24) # remove dups
 
 # mission 2: unit_1190-20241218T1433
-unit1190_sci_dec24 = read_csv("~/Downloads/unit_1190-20241218T1433-profile-sci-delayed_5874_356b_e4af.csv", skip=1)
-names(unit1190_sci_dec24) = c("date_time","latitude","longitude","depth", 
-                          "alt","pitch","roll","pressure",
-                          "sal", "temp", "u", "v", "wdep")
-unit1190_sci_dec24$date_time <- as.POSIXct(unit1190_sci_dec24$date_time,tz="UTC") # define as UTC
+unit1190_sci_dec24 = read_csv("~/Downloads/unit_1190-20241218T1433-profile-sci-delayed_a678_d246_5ce3.csv") # unit_1190-20241218T1433-profile-sci-delayed_5874_356b_e4af.csv", skip=1)
+unit1190_sci_dec24 = unit1190_sci_dec24[-1,]#names(unit1190_sci_dec24) = c("date_time","latitude","longitude","depth", 
+#                          "alt","pitch","roll","pressure",
+#                          "sal", "temp", "u", "v", "wdep")
+unit1190_sci_dec24$date_time <- as.POSIXct(unit1190_sci_dec24$time,tz="UTC") # define as UTC
 unit1190_sci_dec24 = unique(unit1190_sci_dec24) # remove dups
 unit1190_sci_dec24 = mutate(unit1190_sci_dec24, cdom=NaN, chl=NaN, oxy=NaN)
 
@@ -42,7 +44,7 @@ unit1190_sci_feb25 = read_csv("~/Downloads/unit_1190-20250224T1405-profile-sci-r
 names(unit1190_sci_feb25) = c("date_time","latitude","longitude","depth", 
                               "alt","pitch","roll","pressure",
                               "sal", "temp", "wdep")
-unit1190_sci_feb25$date_time <- as.POSIXct(unit1190_sci_feb25$date_time,tz="UTC") # define as UTC
+unit1190_sci_feb25$date_time <- as.POSIXct(unit1190_sci_feb25$time,tz="UTC") # define as UTC
 unit1190_sci_feb25 = unique(unit1190_sci_feb25) # remove dups
 unit1190_sci_feb25 = mutate(unit1190_sci_feb25, 
                             u=NaN, v=NaN, cdom=NaN, chl=NaN, oxy=NaN,
@@ -73,13 +75,15 @@ all_temp = ggplot() +
    
 
 m1_temp = ggplot() + 
-  geom_point(data = ru34_sci_nov24 %>% filter(!is.na(alt)), aes(x = date_time, y = -alt, col = temp)) + 
+  geom_point(data =  ru34_sci_nov24, 
+             aes(x = date_time, y = -as.numeric(depth), col = as.numeric(temperature))) + 
   scale_colour_cmocean(name = "thermal", limits = c(3.5,18.5))+
   labs(x = "Date", y = "Depth (m)", col = "Temp. (C)")+ 
   theme_bw()
 
 m2_temp = ggplot() + 
-  geom_point(data = unit1190_sci_dec24, aes(x = date_time, y = -depth, col = temp)) + 
+  geom_point(data = unit1190_sci_dec24, 
+             aes(x = date_time, y = -as.numeric(depth), col = as.numeric(temperature))) + 
   scale_colour_cmocean(name = "thermal", limits = c(3.5,18.5))+
   labs(x = "Date", y = "Depth (m)", col = "Temp. (C)")+ 
   theme_bw()
