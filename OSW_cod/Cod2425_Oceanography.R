@@ -304,4 +304,61 @@ ggarrange(all_temp, all_sal, all_chl, all_oxy,
 # ggarrange(m1_chl, m3_chl, m5_chl,
 #           labels = c("Mission 1", "Mission 3"),
 #           ncol = 1, nrow = 2)
+# -------------- #
+
+# -------------- #
+# match to tag data
+# run after REV_SRW_tags_2025.R
+# -------------- #
+# combine detection with location
+find_nearest_date <- function(date, date_match){  
+  date_nearest <- date %>% 
+    map_dbl(find_nearest_date_worker, date_match) %>% 
+    as.POSIXct(tz = "UTC", origin = "1970-01-01")
+  return(date_nearest)
+}
+
+find_nearest_date_worker <- function(date, date_vector) {
+  delta <- abs(date - date_vector)
+  index <- which.min(delta)
+  x <- date_vector[index]
+  return(x)
+}
+
+ru34_m1_tags$match_time = find_nearest_date(ru34_m1_tags$date_time, whole_mission$date_time)
+ru34_m1_tags2 = left_join(ru34_m1_tags, whole_mission, by =c("match_time"="date_time"))
+
+u1190_m2_tags$match_time = find_nearest_date(u1190_m2_tags$datecollected, whole_mission$date_time)
+u1190_m2_tags2 = left_join(u1190_m2_tags, whole_mission, by =c("match_time"="date_time"))
+
+ru34_m3_tags$match_time = find_nearest_date(ru34_m3_tags$date_time, whole_mission$date_time)
+ru34_m3_tags2 = left_join(ru34_m3_tags, whole_mission, by =c("match_time"="date_time"))
+
+u1190_m4_tags$match_time = find_nearest_date(u1190_m4_tags$date_time, whole_mission$date_time)
+u1190_m4_tags2 = left_join(u1190_m4_tags, whole_mission, by =c("match_time"="date_time"))
+
+ru34_m5_tags$match_time = find_nearest_date(ru34_m5_tags$date_time, whole_mission$date_time)
+ru34_m5_tags2 = left_join(ru34_m5_tags, whole_mission, by =c("match_time"="date_time"))
+
+tags = bind_rows(ru34_m1_tags2, u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2)
+min(tags$temperature, na.rm=T)
+max(tags$temperature, na.rm=T)
+mean(tags$temperature, na.rm=T)
+sd(tags$temperature, na.rm=T)
+
+min(tags$salinity, na.rm=T)
+max(tags$salinity, na.rm=T)
+mean(tags$salinity, na.rm=T)
+sd(tags$salinity, na.rm=T)
+
+min(tags$chlorophyll_a, na.rm=T)
+max(tags$chlorophyll_a, na.rm=T)
+mean(tags$chlorophyll_a, na.rm=T)
+sd(tags$chlorophyll_a, na.rm=T)
+
+min(tags$oxygen_concentration_shifted_mgL, na.rm=T)
+max(tags$oxygen_concentration_shifted_mgL, na.rm=T)
+mean(tags$oxygen_concentration_shifted_mgL, na.rm=T)
+sd(tags$oxygen_concentration_shifted_mgL, na.rm=T)
+# -------------- #
 
