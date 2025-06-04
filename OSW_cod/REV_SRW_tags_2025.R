@@ -18,8 +18,8 @@ library(stringr)
 # import data
 # --------------- #
 ### lease boundaries
-#leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_1/", layer = "Wind_Lease_Outlines_2_2023")
-leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_0/", layer = "BOEM_Wind_Lease_Outlines_06_06_2024")
+leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_1/", layer = "Wind_Lease_Outlines_2_2023")
+#leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_0/", layer = "BOEM_Wind_Lease_Outlines_06_06_2024")
 REV = leases[leases$LEASE_NUMB %in% "OCS-A 0486",]
 SRW = leases[leases$LEASE_NUMB %in% "OCS-A 0487",]
 SFW = leases[leases$LEASE_NUMB %in% "OCS-A 0517",]
@@ -28,27 +28,31 @@ rm(leases)
 #### import known tags
 FreyTags <- read_excel("Downloads/FreyAllSMASTTags.xlsx")
 gvmt = read_csv("Downloads/glider_vmt_transmitters.csv")
-cfrf = read_excel("Downloads/Orsted_leases_sync_tags.xlsx")
+cfrf = read_excel("~/Downloads/Orsted_leases_sync_tags.xlsx")
 
 ### import glider tags
-laura_tag_summary = read_csv("Downloads/Orsted cod - tag detections/orstedcod_detectionsummary.txt") 
-ru34_m1_tags = read_csv("Downloads/Orsted cod - tag detections/ru34-20241102T1737-rxlive-detectionsonly.csv") 
-u1190_m2_tags = read_csv("Downloads/Orsted cod - tag detections/revcod_qualified_detections_2024.csv")
-ru34_m3_tags = read_csv("Downloads/Orsted cod - tag detections/ru34-20250113T1244-rxlive-detectionsonly.csv") 
-u1190_m4_tags = read_csv("Downloads/Orsted cod - tag detections/VUE_Export_unit_1190-20250224T1405.csv") 
-ru34_m5_tags = read_csv("Downloads/Orsted cod - tag detections/ru34-20250311T1220-rxlive-detectionsonly.csv") 
+laura_tag_summary = read_csv("~/Downloads/Orsted cod - tag detections/orstedcod_detectionsummary.txt") 
+ru34_m1_tags = read_csv("~/Downloads/Orsted cod - tag detections/ru34-20241102T1737-rxlive-detectionsonly.csv") 
+u1190_m2_tags = read_csv("~/Downloads/Orsted cod - tag detections/revcod_qualified_detections_2024.csv")
+ru34_m3_tags = read_csv("~/Downloads/Orsted cod - tag detections/ru34-20250113T1244-rxlive-detectionsonly.csv") 
+u1190_m4_tags = read_csv("~/Downloads/Orsted cod - tag detections/VUE_Export_unit_1190-20250224T1405.csv") 
+ru34_m5_tags = read_csv("~/Downloads/Orsted cod - tag detections/ru34-20250311T1220-rxlive-detectionsonly.csv") 
 
 ### create tag date time
-ru34_m1_tags$date_time = as.POSIXct(ru34_m1_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+ru34_m1_tags$date_time = as.POSIXct(ru34_m1_tags$`Date and Time (UTC)`, 
+                                    format="%m/%d/%Y %H:%M:%S", tz = "UTC")
 ru34_m1_tags = dplyr::select(ru34_m1_tags, date_time, Transmitter, MISSION_ID)
 
-ru34_m3_tags$date_time = as.POSIXct(ru34_m3_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+ru34_m3_tags$date_time = as.POSIXct(ru34_m3_tags$`Date and Time (UTC)`, 
+                                    format="%m/%d/%Y %H:%M:%S", tz = "UTC")
 ru34_m3_tags = dplyr::select(ru34_m3_tags, date_time, Transmitter)
 
-u1190_m4_tags$date_time = as.POSIXct(u1190_m4_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+u1190_m4_tags$date_time = as.POSIXct(u1190_m4_tags$`Date and Time (UTC)`, 
+                                     format="%m/%d/%Y %H:%M:%S", tz = "UTC")
 u1190_m4_tags = dplyr::select(u1190_m4_tags, date_time, Transmitter)
 
-ru34_m5_tags$date_time = as.POSIXct(ru34_m5_tags$`Date and Time (UTC)`, format="%m/%d/%Y %H:%M:%S", tz = "UTC")
+ru34_m5_tags$date_time = as.POSIXct(ru34_m5_tags$`Date and Time (UTC)`, 
+                                    format="%m/%d/%Y %H:%M:%S", tz = "UTC")
 ru34_m5_tags = dplyr::select(ru34_m5_tags, date_time, Transmitter)
 
 ### match tag time to position
@@ -75,8 +79,6 @@ ru34_m5_path = read_csv("Downloads/ru34-20250311T1220-trajectory-raw-rt_490c_c8b
 names(ru34_m5_path) = c("date_time", "latitude", "longitude", "depth") #UTC, m 
 ru34_m5_path$date_time =  as.POSIXct(ru34_m5_path$date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
 ru34_m5_path = unique(ru34_m5_path) #remove dups
-
-
 
 # filter to first day in the water
 ru34_m1_tags = filter(ru34_m1_tags, 
@@ -117,7 +119,8 @@ ru34_m5_tags2 = left_join(ru34_m5_tags, ru34_m5_path, by =c("match_time"="date_t
 # setkey(ru34_mission1_path, date_time)
 # setkey(ru34_mission1_tags, date_time)
 # ru34_mission1_tag_coords <-ru34_mission1_path[ru34_mission1_tags, roll = "nearest", mult = "all"]
-u1190_m2_tags2 = dplyr::select(u1190_m2_tags, datecollected, fieldnumber, latitude, longitude) %>%
+u1190_m2_tags2 = dplyr::select(u1190_m2_tags, datecollected, 
+                               fieldnumber, latitude, longitude) %>%
   rename(date_time = datecollected, Transmitter = fieldnumber) %>%
   mutate(date_time = as.POSIXct(date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
 u1190_m2_tags2$mission = 2
@@ -125,10 +128,11 @@ ru34_m3_tags2$mission = 3
 u1190_m4_tags2$mission = 4
 ru34_m5_tags2$mission = 5
 
-tags = bind_rows(dplyr::select(ru34_m1_tags2, -MISSION_ID, -match_time) %>% mutate(mission=1), 
+tags = bind_rows(dplyr::select(ru34_m1_tags2, -MISSION_ID, -match_time) %>% 
+                   mutate(mission=1), 
                  u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2) %>%
   filter(date_time > as.POSIXct("2024-11-01 12:00:00", format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
-             
+
 tags$species = "unknown"
 tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "cod"], "cod", species))
 tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "Black sea Bass"], "BSB", species))
@@ -139,6 +143,32 @@ tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags
 gvmt$species = "glider"
 tags = mutate(tags, species = ifelse(Transmitter %in% gvmt$TransmitterID, "glider", species))
 tags = mutate(tags, species = ifelse(Transmitter %in% str_trim(cfrf$ID), "sync tag", species))
+tags = mutate(tags, species = ifelse(Transmitter %in% c('A69-1602-58728',
+                                                        'A69-1602-58789',
+                                                        'A69-1602-58793',
+                                                        'A69-1602-58798',
+                                                        'A69-1602-58805',
+                                                        'A69-1602-58814', 
+                                                        'A69-1602-58776'), 
+                                     "dead cod", species))
+#---------------#
+
+
+#---------------#
+# Time diff
+#---------------#
+cod = tags %>% filter(species %in% "cod")
+cod_sum = cod %>% 
+  group_by(Transmitter) %>%
+  summarise(first_hit = min(date_time),
+            last_hit = max(date_time)) %>% 
+  mutate(secs = (last_hit - first_hit),
+         mins = ifelse(secs > 60, round(secs/60, digits = 2), NA),
+         days = ifelse(secs > 86400, round(secs/86400, digits = 2), NA))
+median(cod_sum$days)
+mean(cod_sum$days)
+sd(cod_sum$days)
+
 #---------------#
 
 #---------------#
@@ -155,20 +185,21 @@ p = ggplot() +
   geom_sf(data = SFW[1,], col="cornflowerblue", fill=NA) + 
   geom_sf(data = SRW, col="orange", fill=NA) + 
   theme_bw()
-#p 
+p 
 
-p4 = p + geom_point(data = tags %>% filter(species %in% "cod"), 
-               aes(x=longitude, y=latitude, col=Transmitter)) + #, shape = as.character(mission)))+
+p4 = p + 
+  geom_point(data = tags %>% filter(species %in% "cod"), 
+             aes(x=longitude, y=latitude, col=Transmitter),size=2) + #, shape = as.character(mission)))+
   labs(title="Cod Detections", x="Longitude", y="Longitude") + #, shape="Mission")
   theme_bw() + 
   theme(legend.position = "bottom", 
         axis.text = element_text(size = 13), 
-        legend.text = element_text(size = 7)) 
+        legend.text = element_text(size = 10)) 
 p4
 ggsave("REV_SRW_2425_spatial_tags.png",p4)
 
 p6 = p + geom_point(data = tags %>% filter(species %in% "cod"), 
-               aes(x=longitude, y=latitude, col=Transmitter))+
+                    aes(x=longitude, y=latitude, col=Transmitter))+
   facet_wrap(~Transmitter)+
   labs(title="Cod Detections",x="Longitude",y="Longitude",shape="Mission")+
   theme_bw() + 
@@ -179,8 +210,9 @@ p6 = p + geom_point(data = tags %>% filter(species %in% "cod"),
 p6
 ggsave("REV_SRW_2425_cod_tags_lease.png",p6, dpi=320)
 
-p5 = ggplot() + geom_point(data = tags %>% filter(species %in% "cod"), 
-                      aes(x=longitude, y=latitude, col=date_time, shape = as.character(mission)))+
+p5 = ggplot() + 
+  geom_point(data = tags %>% filter(species %in% "cod"), 
+             aes(x=longitude, y=latitude, col=date_time, shape = as.character(mission)))+
   facet_wrap(~Transmitter, scales = "free")+
   labs(title="Cod Detections", x="Longitude", y="Longitude", 
        shape="Mission", col = "Date")+
@@ -190,16 +222,26 @@ p5 = ggplot() + geom_point(data = tags %>% filter(species %in% "cod"),
 p5
 ggsave("REV_SRW_2425_cod_space_time.png",p5, dpi=320)
 
-z = tags[tags$Transmitter %in% "A69-1602-58805",]
 
+# by tag
+#z = tags[tags$Transmitter %in% "A69-1602-58805",]
 tag_list = unique(tags$Transmitter[tags$species %in% "cod"])
-ggplot() + geom_point(data = tags[tags$Transmitter %in% tag_list[11],], 
-                      aes(x=longitude, y=latitude, col=Transmitter, shape = as.character(mission)))+
+ggplot() + 
+  geom_point(data = tags[tags$Transmitter %in% tag_list[11],], 
+                      aes(x=longitude, y=latitude, col=Transmitter, 
+                          shape = as.character(mission)))+
   labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
+#p + 
+ggplot() +   geom_sf(data = SRW, col="orange", fill=NA) + 
+  geom_point(data = tags[tags$Transmitter %in% tag_list[1],], 
+             aes(x=longitude, y=latitude)) +
+  labs(title="Cod Detections", x="Longitude", y="Longitude")+
+  theme_bw() + 
+  theme(text = element_text(size=12)) 
 
 # Tag v Date
 x = tags %>% 
-  filter(!species %in% "glider") %>%
+  filter(!species %in% c("glider","dead cod","sync tag")) %>%
   mutate(mo = month(date_time)) %>%
   group_by(mo, species) %>%
   summarise(n=n()) %>%
@@ -216,7 +258,7 @@ x = tags %>%
          o = ifelse(mo %in% 2, 4, o),
          o = ifelse(mo %in% 3, 5, o))
 y = tags %>%
-  filter(!species %in% "glider") %>%
+  filter(!species %in% c("glider","dead cod","sync tag")) %>%
   mutate(mo = month(date_time)) %>%
   group_by(mo, Transmitter, species) %>%
   summarise(n=n()) %>%
@@ -240,7 +282,7 @@ p0a = ggplot()+
            stat="identity", position = position_stack(reverse = TRUE),col="black") +
   theme_bw() +
   xlab("Month") + ylab("Number of Detections")+
-  scale_fill_manual(values = c("#A6CEE3","#1F78B4","grey"))+
+  scale_fill_manual(values = c("#A6CEE3","#1F78B4"))+
   theme(legend.position="none", 
         text = element_text(size = 15)) 
 p0a
@@ -249,10 +291,10 @@ p0b = ggplot()+
            stat="identity", position = position_stack(reverse = TRUE),col="black") +
   theme_bw() +
   xlab("Month") + ylab("Unique Tags Detected")+
-  scale_fill_manual(values = c("#A6CEE3","#1F78B4","grey"))+
+  scale_fill_manual(values = c("#A6CEE3","#1F78B4"))+
   theme(legend.position="bottom", 
         text = element_text(size = 15))# +
-  #scale_x_date(date_labels = "%b") 
+#scale_x_date(date_labels = "%b") 
 p0b
 
 #library(cowplot)
@@ -271,8 +313,8 @@ p1 = ggplot()+
   guides(color="none") + 
   theme(legend.position="none", 
         text = element_text(size = 15)) #+ 
-  #scale_x_date(date_labels = "%b %d") + 
- # scale_colour_manual(values = colpal)
+#scale_x_date(date_labels = "%b %d") + 
+# scale_colour_manual(values = colpal)
 p1
 #ggsave("REV_tag_date.png",p1)
 
@@ -281,7 +323,8 @@ p0
 ggsave("REV_SRW_2425_tag_month.png",p0)
 
 # Tag v Time
-x = tags %>% filter(species %in% "cod") %>% group_by(Transmitter, date_time) 
+x = tags %>% filter(species %in% "cod") %>% 
+  group_by(Transmitter, date_time) 
 #y = filter(ru34, date(date_time) %in% date(x$date_time) & hour(date_time) %in% hour(x$date_time))
 p3 = ggplot(x, aes(x=date_time, y=-depth, col=Transmitter), size=5)+ 
   geom_point()+
@@ -295,6 +338,7 @@ p3 = ggplot(x, aes(x=date_time, y=-depth, col=Transmitter), size=5)+
 #geom_point(data = y, aes(x=date_time, y=-depth), pch=1)
 p3
 ggsave("REV_SRW_2425_depth_time.png",p3)
+
 
 # # spatial
 # #library(RColorBrewer)
