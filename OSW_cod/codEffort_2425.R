@@ -91,7 +91,7 @@ ggplot() +
   theme(text = element_text(size=20))+
   #paletteer::scale_fill_paletteer_c("viridis::plasma") + 
   scale_fill_gradient2(na.value = "white", low = "yellow", mid = "magenta", 
-                        high = "purple", midpoint = 4) +
+                        high = "purple4", midpoint = 4) +
   labs(fill = "Passes",y="Latitude",x="Longtitude")
   #scale_fill_viridis_c(option = "magma")
   #scale_fill_binned(type = "viridis") 
@@ -115,5 +115,5 @@ ggplot() +
   theme_bw() + 
   labs(fill = "Passes",y="Latitude",x="Longtitude") +
   scale_color_gradient2(na.value = "white", low = "yellow", mid = "magenta", 
-                        high = "purple", midpoint = 4) 
+                        high = "purple4", midpoint = 4) 
   # scale_color_binned(type = "viridis", na.value = "white")
