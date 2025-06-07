@@ -12,18 +12,26 @@ library(data.table)
 library(readxl)
 library(purrr)
 library(stringr)
+library(geosphere)
 #---------------#
 
 # --------------- #
 # import data
 # --------------- #
 ### lease boundaries
-leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_1/", layer = "Wind_Lease_Outlines_2_2023")
-#leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_0/", layer = "BOEM_Wind_Lease_Outlines_06_06_2024")
+#leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_1/", layer = "Wind_Lease_Outlines_2_2023")
+leases = st_read(dsn = "~/Downloads/BOEM_Renewable_Energy_Shapefiles_0/", layer = "BOEM_Wind_Lease_Outlines_06_06_2024")
 REV = leases[leases$LEASE_NUMB %in% "OCS-A 0486",]
 SRW = leases[leases$LEASE_NUMB %in% "OCS-A 0487",]
 SFW = leases[leases$LEASE_NUMB %in% "OCS-A 0517",]
 rm(leases)
+PA1 = st_read(dsn = "~/Downloads/NMFS_Priority_Zone1/", layer = "NMFS_Priority_Zone1")
+PA1 = st_transform(PA1, crs = st_crs(4326))
+# ggplot() + 
+#   geom_sf(data = REV, fill = NA) + 
+#   geom_sf(data = SFW[1,], fill = NA) + 
+#   geom_sf(data = SRW, fill = NA) + 
+#   geom_sf(data = PA1, col="blue", fill = NA)
 
 #### import known tags
 FreyTags <- read_excel("Downloads/FreyAllSMASTTags.xlsx")
@@ -85,6 +93,10 @@ ru34_m1_tags = filter(ru34_m1_tags,
                       date_time >= min(ru34_m1_path$date_time) & 
                         date_time <= max(ru34_m1_path$date_time))
 
+u1190_m4_tags = filter(u1190_m4_tags, 
+                      date_time >= min(u1190_m4_path$date_time) & 
+                        date_time <= max(u1190_m4_path$date_time))
+
 # combine detection with location
 find_nearest_date <- function(date, date_match){  
   date_nearest <- date %>% 
@@ -112,6 +124,15 @@ u1190_m4_tags2 = left_join(u1190_m4_tags, u1190_m4_path, by =c("match_time"="dat
 ru34_m5_tags$match_time = find_nearest_date(ru34_m5_tags$date_time, ru34_m5_path$date_time)
 ru34_m5_tags2 = left_join(ru34_m5_tags, ru34_m5_path, by =c("match_time"="date_time"))
 
+# #bad spatial 
+# "A69-1602-58816"
+# "A69-1602-58804"
+# "A69-1602-58784"
+# b1 = tags %>% filter(Transmitter == "A69-1602-58816")
+# b2 = tags %>% filter(Transmitter == "A69-1602-58804")
+# b3 = tags %>% filter(Transmitter == "A69-1602-58784")
+
+  
 # 
 # # creating more matches than tag times
 # setDT(ru34_mission1_path) 
@@ -119,10 +140,12 @@ ru34_m5_tags2 = left_join(ru34_m5_tags, ru34_m5_path, by =c("match_time"="date_t
 # setkey(ru34_mission1_path, date_time)
 # setkey(ru34_mission1_tags, date_time)
 # ru34_mission1_tag_coords <-ru34_mission1_path[ru34_mission1_tags, roll = "nearest", mult = "all"]
+
 u1190_m2_tags2 = dplyr::select(u1190_m2_tags, datecollected, 
                                fieldnumber, latitude, longitude) %>%
   rename(date_time = datecollected, Transmitter = fieldnumber) %>%
-  mutate(date_time = as.POSIXct(date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
+  mutate(date_time = as.POSIXct(date_time, format="%Y-%m-%d %H:%M:%S", tz = "UTC")) %>% 
+  filter(date_time > as.Date("2024-10-31")) # includes last seasons' 2024 data from MATOS, filter out
 u1190_m2_tags2$mission = 2
 ru34_m3_tags2$mission = 3
 u1190_m4_tags2$mission = 4
@@ -131,7 +154,7 @@ ru34_m5_tags2$mission = 5
 tags = bind_rows(dplyr::select(ru34_m1_tags2, -MISSION_ID, -match_time) %>% 
                    mutate(mission=1), 
                  u1190_m2_tags2, ru34_m3_tags2, u1190_m4_tags2, ru34_m5_tags2) %>%
-  filter(date_time > as.POSIXct("2024-11-01 12:00:00", format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
+  filter(date_time > as.POSIXct("2024-10-31 12:00:00", format="%Y-%m-%d %H:%M:%S", tz = "UTC"))
 
 tags$species = "unknown"
 tags = mutate(tags, species = ifelse(Transmitter %in% FreyTags$`Tag ID`[FreyTags$species %in% "cod"], "cod", species))
@@ -161,14 +184,36 @@ cod = tags %>% filter(species %in% "cod")
 cod_sum = cod %>% 
   group_by(Transmitter) %>%
   summarise(first_hit = min(date_time),
-            last_hit = max(date_time)) %>% 
-  mutate(secs = (last_hit - first_hit),
+            last_hit = max(date_time))
+
+export = as.data.frame(matrix(ncol=4,nrow=20,data=NA))
+names(export) = c("first_lat","first_lon","last_lat","last_lon")
+for(a in 1:20) {
+  export$first_lat[a] = tags$latitude[tags$date_time %in% cod_sum$first_hit[a] & tags$species %in% "cod"]
+  export$first_lon[a] = tags$longitude[tags$date_time %in% cod_sum$first_hit[a] & tags$species %in% "cod"]
+  export$last_lat[a] = tags$latitude[tags$date_time %in% cod_sum$last_hit[a] & tags$species %in% "cod"]
+  export$last_lon[a] = tags$longitude[tags$date_time %in% cod_sum$last_hit[a] & tags$species %in% "cod"]
+}
+
+cod_sum2 = cbind(cod_sum, export) %>%
+  rowwise() %>% 
+  mutate(distance = round(distm(c(first_lon, first_lat), c(last_lon, last_lat), 
+                          fun = distHaversine), digits = 2), 
+         secs = (last_hit - first_hit),
          mins = ifelse(secs > 60, round(secs/60, digits = 2), NA),
          days = ifelse(secs > 86400, round(secs/86400, digits = 2), NA))
-median(cod_sum$days)
-mean(cod_sum$days)
-sd(cod_sum$days)
 
+median(cod_sum2$days[!cod_sum2$Transmitter %in% "A69-1602-58804"], na.rm=T)
+mean(cod_sum2$days, na.rm=T)
+sd(cod_sum2$days, na.rm=T)
+
+round(median(cod_sum2$secs, na.rm=T)/86400, digits = 2)
+round(mean(cod_sum2$secs, na.rm=T)/86400, digits = 2)
+round(sd(cod_sum2$secs, na.rm=T)/86400, digits = 2)
+
+round(median(cod_sum2$distance), digits = 2)
+round(mean(cod_sum2$distance), digits = 2)
+round(sd(cod_sum2$distance), digits = 2)
 #---------------#
 
 #---------------#
@@ -212,12 +257,13 @@ ggsave("REV_SRW_2425_cod_tags_lease.png",p6, dpi=320)
 
 p5 = ggplot() + 
   geom_point(data = tags %>% filter(species %in% "cod"), 
-             aes(x=longitude, y=latitude, col=date_time, shape = as.character(mission)))+
-  facet_wrap(~Transmitter, scales = "free")+
+             aes(x=longitude, y=latitude, 
+                 col=date_time, shape = as.character(mission)))+
+  facet_wrap(~Transmitter, scales = "free", ncol=4)+
   labs(title="Cod Detections", x="Longitude", y="Longitude", 
        shape="Mission", col = "Date")+
   theme_bw() + 
-  theme(text = element_text(size=12), 
+  theme(text = element_text(size=10), 
         legend.position = "bottom") 
 p5
 ggsave("REV_SRW_2425_cod_space_time.png",p5, dpi=320)
@@ -228,8 +274,8 @@ ggsave("REV_SRW_2425_cod_space_time.png",p5, dpi=320)
 tag_list = unique(tags$Transmitter[tags$species %in% "cod"])
 ggplot() + 
   geom_point(data = tags[tags$Transmitter %in% tag_list[11],], 
-                      aes(x=longitude, y=latitude, col=Transmitter, 
-                          shape = as.character(mission)))+
+             aes(x=longitude, y=latitude, col=Transmitter, 
+                 shape = as.character(mission)))+
   labs(title="Cod Tags",x="Longitude",y="Longitude",shape="Mission")
 #p + 
 ggplot() +   geom_sf(data = SRW, col="orange", fill=NA) + 
