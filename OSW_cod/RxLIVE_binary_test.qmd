@@ -1,0 +1,524 @@
+---
+title: "Glider mounted RXLive range tests"
+format: revealjs
+editor: visual
+---
+```{r, , include=FALSE}
+# -------------------------- #
+##### packages
+# -------------------------- #
+require(sf)
+require(tidyverse)
+require(ggplot2)
+require(readxl)
+require(lubridate)
+#require(marmap)
+#require(gamm4)
+#require(mgcv)
+require(readr)
+library(data.table)
+require(dplyr)
+#library(zoo)
+library(units)
+# -------------------------- #
+
+
+# -------------------------- #
+##### import glider tracks
+# -------------------------- #
+#   ru39-20250716T1542 (VMT)
+ru39_202507V = read_csv("Downloads/ru39-20250716T1542-trajectory-raw-delayed_11fb_425f_b092.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20250716T1542", type = "VMT")
+#   ru43-20250716T1522 (RXLive)
+ru43_202507R = read_csv("Downloads/ru43-20250716T1522-trajectory-raw-delayed_bcc1_221b_dcce.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru43-20250716T1522", type = "RxLIVE")
+#   ru39-20250423T1535 (VMT)
+ru39_202504V = read_csv("Downloads/ru39-20250423T1535-trajectory-raw-delayed_6b14_e025_79a5.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20250423T1535", type = "VMT")
+#   ru43-20250423T1533 (RXLive)
+ru43_202504R = read_csv("Downloads/ru43-20250423T1533-trajectory-raw-delayed_43dc_4175_5c86.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru43-20250423T1533", type = "RxLIVE")
+#   ru40-20250226T1704 (RXLive)
+ru40_202502R = read_csv("Downloads/ru40-20250226T1704-trajectory-raw-delayed_7249_bd1d_6a17.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20250226T1704", type = "RxLIVE")
+#   ru39-20250226T1700 (VMT)
+ru39_202502V = read_csv("Downloads/ru39-20250226T1700-trajectory-raw-delayed_6e43_ca6c_de91.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20250226T1700", type = "VMT")
+#   ru39-20241021T1717 (VMT)
+ru39_202410V = read_csv("Downloads/ru39-20241021T1717-trajectory-raw-delayed_b728_0ef9_9037.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20241021T1717", type = "VMT")
+#   ru40-20241021T1654 (RXLive)
+ru40_202410R = read_csv("Downloads/ru40-20241021T1654-trajectory-raw-delayed_357d_07d6_eaf8.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20241021T1654", type = "RxLIVE")
+#   ru40-20240723T1600 (RXLive)
+ru40_202407R = read_csv("Downloads/ru40-20240723T1600-trajectory-raw-delayed_a2fe_cc76_ee72.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20240723T1600", type = "RxLIVE")
+#   ru39-20240723T1442 (VMT)
+ru39_202407V = read_csv("Downloads/ru39-20240723T1442-trajectory-raw-delayed_e35d_97f7_55c4.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20240723T1442", type = "VMT")
+#   ru40-20240429T1528 (RXLive)
+ru40_202404R = read_csv("Downloads/ru40-20240429T1528-trajectory-raw-delayed_20d7_b3c5_e32b.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20240429T1528", type = "RxLIVE")
+#   ru39-20240429T1522 (VMT)
+ru39_202404V = read_csv("Downloads/ru39-20240429T1522-trajectory-raw-delayed_73b5_a420_f674.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20240429T1522", type = "VMT")
+#   ru39-20240215T1646 (VMT)
+ru39_202402V = read_csv("Downloads/ru39-20240215T1646-trajectory-raw-delayed_7c51_14fd_aaf1.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20240215T1646", type = "VMT")
+#   ru40-20240215T1642 (RXLive)
+ru40_202402R = read_csv("Downloads/ru40-20240215T1642-trajectory-raw-delayed_da18_dfd6_a67b.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20240215T1642", type = "RxLIVE")
+#   ru40-20231115T1612 (RXLive)
+ru40_202311aR = read_csv("Downloads/ru40-20231115T1612-trajectory-raw-delayed_fb09_3a3e_050b.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20231115T1612", type = "RxLIVE")
+#   ru40-20231103T1421 (RXLive)
+ru40_202311bR = read_csv("Downloads/ru40-20231103T1421-trajectory-raw-delayed_41ba_d8d3_a644.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20231103T1421", type = "RxLIVE")
+#   ru39-20231103T1413 (VMT)
+ru39_202311V = read_csv("Downloads/ru39-20231103T1413-trajectory-raw-delayed_7df5_c419_95cb.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20231103T1413", type = "VMT")
+#   ru39-20231018T1426 (VMT)
+ru39_202310V = read_csv("Downloads/ru39-20231018T1426-trajectory-raw-rt_7078_f062_245b.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20231018T1426", type = "VMT")
+#   ru40-20231018T1419 (RXLive)
+ru40_202310R = read_csv("Downloads/ru40-20231018T1419-trajectory-raw-rt_85ee_3124_5c42.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20231018T1419", type = "RxLIVE")
+#   ru40-20230817T1522 (RXLive)
+ru40_202308R = read_csv("Downloads/ru40-20230817T1522-trajectory-raw-delayed_ff87_a485_df74.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru40-20230817T1522", type = "RxLIVE")
+#   ru39-20230817T1520 (VMT)
+ru39_202308V = read_csv("Downloads/ru39-20230817T1520-trajectory-raw-delayed_78c6_e75d_07af.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20230817T1520", type = "VMT")
+#   ru41-20230420T1638 (RXLive)
+ru41_202304R = read_csv("Downloads/ru41-20230420T1638-trajectory-raw-rt_740d_8c6d_faf6.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru41-20230420T1638", type = "RxLIVE")
+#   ru39-20230420T1636 (VMT)
+ru39_202304V = read_csv("Downloads/ru39-20230420T1636-trajectory-raw-delayed_beae_0150_37d5.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru39-20230420T1636", type = "VMT")
+
+# gap fills
+# "ru43-20240612T16" (VMT)
+ru43_202406V = read_csv("Downloads/ru43-20240612T1658-trajectory-raw-delayed_82a6_fee7_e293.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru43-20240612T1658", type = "VMT")
+
+# ru43-20240904T15 (VMT)
+ru43_202409V = read_csv("Downloads/ru43-20240904T1539-trajectory-raw-delayed_9349_99a5_2289.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru43-20240904T1539", type = "VMT")
+ 
+# NJDEP
+# ru32-20240904T15 (VMT)
+ru32_20240904V = read_csv("Downloads/ru32-20240904T1537-trajectory-raw-delayed_5ad8_eec0_1f3f.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru32-20240904T1537", type = "VMT")
+
+# "ru32-20240429T15" (VMT)
+ru32_202404V = read_csv("Downloads/ru32-20240429T1543-trajectory-raw-delayed_4070_513e_662e.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru32-20240429T1543", type = "VMT")
+
+# "ru32-20240723T14" 
+ru32_202407V = read_csv("Downloads/ru32-20240723T1443-trajectory-raw-delayed_9169_4d95_5395.csv", skip=1) %>%
+  mutate(time = round_date(UTC, unit = "minute")) %>%
+  group_by(time) %>% 
+  summarise(degrees_east = mean(degrees_east, na.rm=T), 
+            degrees_north = mean(degrees_north, na.rm=T),
+            m = mean(m, na.rm=T),
+            deployment = "ru32-20240723T1443", type = "VMT")
+
+deployment_list = as.data.frame(rbind(c("ru39-20250716T1542","VMT"),
+                        c("ru43-20250716T1522","RxLIVE"),
+                        c("ru39-20250423T1535","VMT"),
+                        c("ru43-20250423T1533","RxLIVE"),
+                        c("ru40-20250226T1704","RxLIVE"),
+                        c("ru39-20250226T1700","VMT"),
+                        c("ru39-20241021T1717","VMT"),
+                        c("ru40-20241021T1654","RxLIVE"),
+                        c("ru40-20240723T1600","RxLIVE"),
+                        c("ru39-20240723T1442","VMT"),
+                        c("ru40-20240429T1528","RxLIVE"),
+                        c("ru39-20240429T1522","VMT"),
+                        c("ru39-20240215T1646","VMT"),
+                        c("ru40-20240215T1642","RxLIVE"),
+                        c("ru40-20231115T1612","RxLIVE"),
+                        c("ru40-20231103T1421","RxLIVE"),
+                        c("ru39-20231103T1413","VMT"),
+                        c("ru39-20231018T1426","VMT"),
+                        c("ru40-20231018T1419","RxLIVE"),
+                        c("ru40-20230817T1522","RxLIVE"),
+                        c("ru39-20230817T1520","VMT"),
+                        c("ru41-20230420T1638","RxLIVE"),
+                        c("ru39-20230420T1636","VMT"),
+                        c("ru43-20240904T1539","VMT"),
+                        c("ru32-20240904T1537","VMT"),
+                        c("ru32-20240429T1543","VMT"),
+                        c("ru32-20240723T1443","VMT"),
+                        c("ru43-20240612T1658","VMT")))
+names(deployment_list) = c("deployment","type")
+
+# -------------------------- #
+##### import receiver locations
+# -------------------------- #
+MU = read_excel("~/Downloads/murmi_master_arraymetadata_20251106_KB.xlsx") 
+MU_sf = MU %>% 
+  filter(!is.na(recover_long)) %>%
+  st_as_sf(coords = c("recover_long", "recover_lat"), crs = 4326)
+MU_utm = st_transform(MU_sf, crs = st_crs(6348))
+
+# Tags (from laura)
+#hits = read_csv("~/Downloads/rmigliders_qualified_detections_202509.csv")
+hits = read_csv("~/Downloads/rmigliders_unqualified_detections_202509.csv")
+hits = hits %>% filter(tagName %in% MU$transmitter) %>%
+  mutate(time = round_date(dateCollectedUTC, unit = "minutes"))
+
+extract_middle <- function(x) {
+  # Remove the first element (index 1) and the last element (index length(x))
+  middle_elements <- x[-c(1, length(x))]
+  # Collapse the elements back into a single string, e.g., with a hyphen
+  paste(middle_elements, collapse = "-")
+}
+hits$deployment <- sapply(strsplit(hits$station, "-"), extract_middle) %>% 
+  tolower() 
+hits$deployment = gsub('^(.{4})(.*)$', '\\1-\\2', hits$deployment)
+hits$deployment = gsub('^(.{13})(.*)$', '\\1T\\2', hits$deployment)
+hits = mutate(hits, 
+              deployment = ifelse(deployment %in% "ru40-20240215T16", "ru40-20240215T1642", deployment),
+              deployment = ifelse(deployment %in% "ru40-20240429T15", "ru40-20240429T1528", deployment),
+              deployment = ifelse(deployment %in% "ru39-20240429T15", "ru39-20240429T1522", deployment), 
+              deployment = ifelse(deployment %in% "ru40-20241021T16", "ru40-20241021T1654", deployment), 
+              deployment = ifelse(deployment %in% "ru32-20240429T15", "ru32-20240429T1543", deployment),
+              deployment = ifelse(deployment %in% "ru32-20240723T14", "ru32-20240723T1443", deployment), 
+              deployment = ifelse(deployment %in% "ru43-20240904T15", "ru43-20240904T1539", deployment), 
+              deployment = ifelse(deployment %in% "ru39-20240723T14", "ru39-20240723T1442", deployment),
+              deployment = ifelse(deployment %in% "ru40-20240723T16", "ru40-20240723T1600", deployment), 
+              deployment = ifelse(deployment %in% "ru39-20240215T16", "ru39-20240215T1646", deployment),
+              deployment = ifelse(deployment %in% "ru39-20241021T17", "ru39-20241021T1717", deployment), 
+              deployment = ifelse(deployment %in% "ru43-20240612T16", "ru43-20240612T1658", deployment),
+              deployment = ifelse(deployment %in% "ru32-20240904T15", "ru32-20240904T1537", deployment), 
+              deployment = ifelse(deployment %in% "ru40-20250226T17", "ru40-20250226T1704", deployment))
+                    
+# not out of matos 
+# "ru39-20250716T1542"
+# "ru43-20250716T1522"
+# "ru39-20250423T1535"
+# "ru43-20250423T1533"
+# "ru39-20250226T1700"
+# "ru40-20240215T1642",
+# "ru40-20231115T1612",
+# "ru40-20231103T1421",
+# "ru39-20231103T1413",
+# "ru39-20231018T1426",
+# "ru40-20231018T1419",
+# "ru40-20230817T1522",
+# "ru39-20230817T1520",
+# "ru41-20230420T1638",
+# "ru39-20230420T1636"
+
+hits_sf = st_as_sf(hits, 
+                  coords = c("decimalLongitude", "decimalLatitude"),
+                  crs = 4326)
+hits_utm = st_transform(hits_sf, crs = st_crs(6348))
+
+# function
+dist_from_receiver <- function(tag_id){  
+  MU_st = filter(MU_utm, transmitter %in% tag_id)
+  y = hits_utm %>% filter(tagName %in% tag_id) 
+  d=as.data.frame(matrix(data=NA, ncol=2, nrow=dim(y)[1]))
+  names(d)=c("dist","tag")
+  d$tag=tag_id
+  for (a in 1:dim(y)[1]){
+    if (any(MU_st$deploy_date_time <= y$time[a] & MU_st$recover_date_time >= y$time[a])){
+      m = MU_st[MU_st$deploy_date_time <= y$time[a] & MU_st$recover_date_time >= y$time[a],]
+      d$dist[a] = st_distance(y[a,], m)
+      print(a)
+    } 
+  } 
+  return(d)
+}
+
+t = unique(hits$tagName)
+dists_df = as.data.frame(matrix(nrow=0, ncol=4, data = NA))
+names(dists_df) = c("dist","tag_id","time")
+for (b in 1:length(t)){
+  dists = dist_from_receiver(t[b])
+  dists_df = rbind(dists_df, 
+                   cbind(dists, 
+                         hits$time[hits$tagName %in% t[b]],
+                         hits$deployment[hits$tagName %in% t[b]]))
+}
+names(dists_df) = c("dist","tag_id","time","deployment")
+dists_df = full_join(dists_df, deployment_list, by="deployment")
+  
+# mean(dists_df$dist, na.rm = T)
+# min(dists_df$dist, na.rm = T)
+# max(dists_df$dist, na.rm = T)
+# quantile(dists_df$dist, na.rm=T)
+```
+
+```{r}
+## loop through missions 
+# dat = ru32_202404V
+binary_receiver_loops <- function(dat){
+  a = left_join(dat, hits, by=c("time","deployment")) %>%
+  mutate(detection = ifelse(!is.na(tagName), 1, 0))
+
+  binned_data_labels <- cut(a$time, breaks = "30 min")
+  binned_data_indices <- cut(a$time, breaks = "30 min", labels = FALSE)
+  b = data.frame(a, bin_label = binned_data_labels, bin_index = binned_data_indices) 
+  b_data = b %>% group_by(tagName, bin_index, deployment) %>% 
+    dplyr::summarize(detection = sum(detection), 
+                     detection = ifelse(detection > 1, 1, detection))
+  b_utm = st_as_sf(b, coords = c("degrees_east", "degrees_north"), crs = 4326) %>% 
+    st_transform(hits_sf, crs = st_crs(6348)) %>%
+    arrange(bin_index) %>% 
+    group_by(bin_index, bin_label) %>% 
+    summarize(do_union = FALSE) %>%  
+    st_cast("LINESTRING")
+  b_sfdf = left_join(b_utm, b_data, by="bin_index")
+
+  #intersection_results <- list()
+  tag_list = unique(b$tagName[!is.na(b$tagName)])
+  
+  for (i in 1:length(tag_list)){
+    print(i)
+    x = filter(MU_utm, transmitter %in% tag_list[i])
+    bb = filter(b_sfdf, tagName %in% c(NA, tag_list[i])) %>%
+      mutate(foo=paste(bin_index, tagName, sep="_"),
+             time = as.POSIXct(bin_label)) %>%
+      filter(!foo %in% paste(bin_index[tagName %in% tag_list[i]],NA,sep="_"),
+             st_is_empty(geometry) == FALSE,
+             as.numeric(st_length(geometry))!=0) %>%
+      dplyr::select(-foo)
+    dist_results <- NA
+    for (ii in 1:dim(bb)[1]){
+      if (any(x$deploy_date_time <= bb$time[ii] & x$recover_date_time >= bb$time[ii])){
+        m = x[x$deploy_date_time <= bb$time[ii] & x$recover_date_time >= bb$time[ii],]
+        dist_results[ii] = st_distance(bb[ii,], m)
+      }
+    }
+    to.add = cbind(bb, dist_results) %>% 
+      filter(dist_results <= 1700) %>%
+      mutate(receiver_tested = tag_list[i])
+    output = rbind(output, to.add)
+    #return(output)
+  }
+}
+
+# create an empty sf and add to it each run of the function for each deployment
+output <- st_sf(geometry = st_sfc(), crs = 6348) 
+binary_receiver_loops(ru40_202402R) 
+binary_receiver_loops(ru40_202404R) 
+binary_receiver_loops(ru39_202404V) 
+binary_receiver_loops(ru40_202410R) 
+binary_receiver_loops(ru32_202404V)
+binary_receiver_loops(ru32_202407V)
+binary_receiver_loops(ru43_202409V)
+binary_receiver_loops(ru39_202407V)
+binary_receiver_loops(ru40_202407R)
+binary_receiver_loops(ru39_202402V)
+binary_receiver_loops(ru39_202410V)
+binary_receiver_loops(ru43_202406V)
+binary_receiver_loops(ru32_202409V)
+binary_receiver_loops(ru40_202502R)
+```
+
+## Logit Regression
+
+```{r}
+output_df = as.data.frame(output)
+output_df = full_join(output_df, deployment_list, by="deployment")
+
+ggplot(data = output_df, aes(x = dist_results, y = detection, col=type))+
+  geom_point() +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), 
+              se = TRUE, alpha = 0.1, aes(fill = type)) +
+  theme_bw() + 
+  labs(x="Distance (m) from sync tag", y="Detection (1=Yes, 0=No)", col="Receiver") +
+  scale_color_manual(values = c("gold","cornflowerblue")) + 
+  scale_fill_manual(values = c("gold","cornflowerblue")) + 
+  theme(text = element_text(size=20))+
+  guides(color = guide_legend(), fill = "none")
+```
+
+```{r}
+ggplot(data = output_df, aes(x = dist_results, y = detection, col=deployment))+
+  geom_point() +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), 
+              se = TRUE, alpha = 0.1, aes(lty = type)) +
+  theme_bw() + 
+  labs(x="Distance (m) from sync tag", y="Detection (1=Yes, 0=No)", col="Receiver") +
+  theme(text = element_text(size=15),
+        legend.position = "bottom")
+  
+```
+## Logit Regression
+```{r, warning=FALSE}
+#library(aod)
+# https://stats.oarc.ucla.edu/r/dae/probit-regression/
+model <- glm(detection ~ dist_results + deployment + (1/receiver_tested), 
+                    family = binomial,
+                    data = output_df)
+print(summary(model))
+
+# Goodness of fit
+#Binomial deviance
+pchisq(deviance(model), df.residual(model),lower=FALSE)
+# Pearson X^2
+pchisq(sum(residuals(model,type="pearson")^2), 286,lower=FALSE)
+```
+
+## Probability of detection based on model
+```{r}
+# generate new data
+newdata <- data.frame(dist_results = rep(seq(from = 20, to = 1500,
+                                    length.out = 100), 3 * 3), 
+                      deployment = rep(c("ru34-20241102T1737", 
+                                      "ru34-20250113T1244", 
+                                      "ru34-20250311T1220"), each = 100 * 3),
+                      receiver_tested = factor(rep(rep(tag_list, each = 56), 1)))
+newdata[, c("p", "se")] <- predict(model, newdata, 
+                                   type = "response", 
+                                   se.fit = TRUE)[-3]
+
+ggplot(data = newdata, aes(x = avg_dist, y = p, color = mission)) +
+  geom_ribbon(aes(ymin = p-se, ymax = p+se, fill = mission), alpha = 0.2) +
+    geom_line(lwd=2) + 
+     theme_bw() + 
+  #facet_wrap(~tag_id) +
+  labs(y="probability of detection", x="Distance (m)") 
+
+  #geom_line(aes(x = avg_dist, y = p + se, color = mission), alpha=0.5, lty = 2) + 
+  #geom_line(aes(x = avg_dist, y = p - se, color = mission), alpha=0.5, lty = 2) +
+```
