@@ -11,18 +11,21 @@ library(stars)
 #library(sfheaders)
 library(sftime)
 #require(rnaturalearth)
+library(writexl)
 
 #### leases
-leases = st_read(dsn = "~/Downloads/BOEM-Renewable-Energy-Shapefiles_22_10_21/", 
-                 layer = "BOEMWindLeaseOutlines_6_30_2022")
+#leases = st_read(dsn = "~/Downloads/BOEM-Renewable-Energy-Shapefiles_22_10_21/", 
+#                 layer = "BOEMWindLeaseOutlines_6_30_2022")
+leases = st_read(dsn = "~/Downloads/boem-renewable-energy-shapefiles_0/", 
+                 layer = "Offshore_Wind_Leases_outlines")
 REV = leases[leases$LEASE_NUMB %in% "OCS-A 0486",]
 SFW = leases[leases$LEASE_NUMB %in% "OCS-A 0517",]
 SRW = leases[leases$LEASE_NUMB %in% "OCS-A 0487",]
 rm(leases)
 
 ##### import receiver locations
-hms_array = st_read('~/Downloads/HMS_Acoustic_Telemetry.kml')
-sfw_array = st_read('~/Downloads/SFW01_VPS_Acoustic_Telemetry.kml')
+#hms_array = st_read('~/Downloads/HMS_Acoustic_Telemetry.kml')
+#sfw_array = st_read('~/Downloads/SFW01_VPS_Acoustic_Telemetry.kml')
 
 #### glider paths
 # mission 1: ru34-20251103T1347
@@ -32,7 +35,7 @@ sfw_array = st_read('~/Downloads/SFW01_VPS_Acoustic_Telemetry.kml')
 path1 = read_csv("~/Downloads/ru34-20251103T1347-trajectory-raw-delayed_029a_762a_c173.csv", skip=1)
 path2 = read_csv("~/Downloads/unit_1190-20251209T1402-trajectory-raw-delayed_97f9_91c3_b10f.csv", skip=1)
 path3 = read_csv("~/Downloads/unit_1190-20260121T1322-trajectory-raw-delayed_16e0_b5b3_c9c8.csv", skip=1)
-path4 = read_csv("~/Downloads/unit_1190-20260307T1315-trajectory-raw-rt_baf3_c30e_0af2.csv", skip=1)
+path4 = read_csv("~/Downloads/unit_1190-20260307T1315-trajectory-raw-delayed_edca_ecb2_a962.csv", skip=1)
 
 path1 = path1[,1:4]
 path2 = path2[,1:4]
@@ -53,7 +56,7 @@ path1 = path1 %>% filter(!is.na(depth)) # remove dups
 path2 = path2 %>% filter(!is.na(depth)) # remove dups
 path3 = path3 %>% filter(!is.na(depth)) # remove dups
 path4 = path4 %>% filter(!is.na(depth)) # remove dups
-path4 = path4[1:50178,] # remove last point, from boat ride home
+#path4 = path4[1:50178,] # remove last point, from boat ride home
 
 path1_sf = st_as_sf(path1, coords = c("longitude", "latitude"), 
                     crs = 4326, remove = FALSE) %>%
@@ -98,7 +101,7 @@ path4_sfbuff = st_buffer(path4_sf, dist = 500)
 buffs = rbind(path1_sfbuff, path2_sfbuff, path3_sfbuff, path4_sfbuff)
 
 buffs_utm19 <- st_transform(buffs, 32619)
-ggrid <- st_make_grid(buffs_utm19, cellsize = c(500, 500), square = TRUE) #500m x 500m 
+ggrid <- st_make_grid(buffs_utm19, cellsize = c(100, 100), square = TRUE) #100m x 100m 
 grid_sf <- st_sf(ggrid) %>% mutate(grid_id = row_number())
 
 buffs1_utm19 <- st_transform(path1_sfbuff, 32619)
@@ -113,11 +116,11 @@ grid_sf <- grid_sf %>% mutate(counts2 = ifelse(counts2==0, NA, counts2))
 ggplot() + geom_sf(data = grid_sf, aes(fill=counts2), col=NA)+ 
   scale_fill_gradient2(na.value = NA, 
                        low = "navy", 
-                       mid = "cornflowerblue", 
+                       mid = "lightblue", 
                        high = "yellow", midpoint = 4) +  
-  geom_sf(data = REV, fill=NA, color="black") + 
-  geom_sf(data = SRW, fill=NA, color="black") + 
-  geom_sf(data = SFW, fill=NA, color="black")+
+  geom_sf(data = REV, fill=NA, color="black", lwd = 1) + 
+  geom_sf(data = SRW, fill=NA, color="black", lwd = 1) + 
+  geom_sf(data = SFW[1,], fill=NA, color="black", lwd = 1)+
   theme_bw() + 
   theme(text = element_text(size= 20), 
         panel.grid = element_blank()) + 
@@ -148,6 +151,15 @@ tag3_info = read_csv("~/Downloads/unit_1190-20260121T1322_rxlive_taginfo.csv")
 tag4_detections = read_csv("~/Downloads/unit_1190-20260307T1315_rxlive_detections.csv")
 tag4_info = read_csv("~/Downloads/unit_1190-20260307T1315_rxlive_taginfo.csv")
 
+taginfo = rbind(tag1_info, tag2_info, tag3_info, tag4_info) %>% 
+  mutate(t0 = as.POSIXct(t0, format = "%m/%d/%Y %H:%M:%S",, tz="UTC"),
+         t1 = as.POSIXct(t1, format = "%m/%d/%Y %H:%M:%S",, tz="UTC")) %>%
+  group_by(tagID, species, PI) %>% 
+  summarise(n = sum(nDetections),
+            start = min(t0),
+            end = max(t1))
+write_xlsx(taginfo, path = "~/Downloads/cod2526_taginfo.xlsx")
+
 # receiver sync tags
 sync_tag_id = c("61099","61140","61141","61142","61143","61146","61148","61149",
                 "61150","61153","61154","61155","61156","61157","61158","61159",
@@ -159,9 +171,9 @@ sync_tag_id = c("61099","61140","61141","61142","61143","61146","61148","61149",
 # Ali's tags
 FreyTags <- read_excel("Downloads/FreyAllSMASTTags.xlsx")
 FreyTags$name = sapply(strsplit(FreyTags$'Tag ID', "-"), tail, 1)
-matches = FreyTags[FreyTags$name %in% tag_ids,]
-Frey_tags = dplyr::filter(tag_sum, name %in% matches$name)
-Frey_tags = left_join(Frey_tags, FreyTags, by = "name") %>% filter(species %in% "cod")
+#matches = FreyTags[FreyTags$name %in% tag_ids,]
+#Frey_tags = dplyr::filter(tag_sum, name %in% matches$name)
+#Frey_tags = left_join(Frey_tags, FreyTags, by = "name") %>% filter(species %in% "cod")
 #result <- as.data.frame(matrix(unlist(layers_sf), ncol = length(layers_sf), byrow = TRUE))
 
 
