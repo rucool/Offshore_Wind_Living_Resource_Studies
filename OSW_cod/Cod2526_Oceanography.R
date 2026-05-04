@@ -36,7 +36,7 @@ m3$date_time <- as.POSIXct(gsub("T", "", m3$time), tz="UTC") # define as UTC
 m3 = unique(m3) # remove dups
 
 # mission 4: unit_1190-20260307T1315 STILL NEED DELAYED MODE DATA
-m4 = read_csv("~/Downloads/unit_1190-20260307T1315-profile-sci-rt_2b9b_c61d_192f.csv")   # ru34-20241102T1737-profile-sci-delayed_9cd0_d462_d3b3.csv", skip=1)
+m4 = read_csv("~/Downloads/unit_1190-20260307T1315-profile-sci-delayed_d366_c1fe_c371.csv") #unit_1190-20260307T1315-profile-sci-rt_2b9b_c61d_192f.csv")   # ru34-20241102T1737-profile-sci-delayed_9cd0_d462_d3b3.csv", skip=1)
 m4 = m4[-1,]
 m4$date_time <- as.POSIXct(gsub("T", "", m4$time), tz="UTC") # define as UTC
 m4 = unique(m4) # remove dups
@@ -65,15 +65,15 @@ max(whole_mission$salinity, na.rm=T)
 mean(whole_mission$salinity, na.rm=T)
 sd(whole_mission$salinity, na.rm=T)
 
-min(whole_mission$chlorophyll_a, na.rm=T)
-max(whole_mission$chlorophyll_a, na.rm=T)
-mean(whole_mission$chlorophyll_a, na.rm=T)
-sd(whole_mission$chlorophyll_a, na.rm=T)
+min(as.numeric(m1$chlorophyll_a), na.rm=T)
+max(as.numeric(m1$chlorophyll_a), na.rm=T)
+mean(as.numeric(m1$chlorophyll_a), na.rm=T)
+sd(as.numeric(m1$chlorophyll_a), na.rm=T)
 
-min(whole_mission$oxygen_concentration_shifted_mgL, na.rm=T)
-max(whole_mission$oxygen_concentration_shifted_mgL, na.rm=T)
-mean(whole_mission$oxygen_concentration_shifted_mgL, na.rm=T)
-sd(whole_mission$oxygen_concentration_shifted_mgL, na.rm=T)
+min(as.numeric(m1$oxygen_concentration_shifted_mgL), na.rm=T)
+max(as.numeric(m1$oxygen_concentration_shifted_mgL), na.rm=T)
+mean(as.numeric(m1$oxygen_concentration_shifted_mgL), na.rm=T)
+sd(as.numeric(m1$oxygen_concentration_shifted_mgL), na.rm=T)
 
 # ----------------- #
 
