@@ -12,6 +12,7 @@ library(stars)
 library(sftime)
 #require(rnaturalearth)
 library(writexl)
+library(geosphere)
 
 #### leases
 #leases = st_read(dsn = "~/Downloads/BOEM-Renewable-Energy-Shapefiles_22_10_21/", 
@@ -83,17 +84,6 @@ path4_sf = st_as_sf(path4, coords = c("longitude", "latitude"), crs = 4326) %>%
   summarise(do_union = FALSE) %>%                   
   st_cast("LINESTRING") 
 
-# ggplot() + 
-#   geom_sf(data = REV, fill=NA, color="black") + 
-#   geom_sf(data = SRW, fill=NA, color="black") + 
-#   geom_sf(data = SFW, fill=NA, color="black") +
-#   coord_sf(xlim = c(-71.39, -70.81), ylim = c(40.82, 41.28)) +
-#   geom_sf(data = path1_sf, color="orange2") + 
-#   geom_sf(data = path2_sf, color="cornflowerblue") +
-#   geom_sf(data = path3_sf, color="yellow3") +
-#   geom_sf(data = path4_sf, color="purple3") + 
-#   theme_bw()
-
 path1_sfbuff = st_buffer(path1_sf, dist = 500)
 path2_sfbuff = st_buffer(path2_sf, dist = 500)
 path3_sfbuff = st_buffer(path3_sf, dist = 500)
@@ -126,21 +116,6 @@ ggplot() + geom_sf(data = grid_sf, aes(fill=counts2), col=NA)+
         panel.grid = element_blank()) + 
   labs(fill = "Passes")
 
-# ggplot() + 
-#   geom_sf(data = REV, fill=NA, color="black") + 
-#   geom_sf(data = SRW, fill=NA, color="black") + 
-#   geom_sf(data = SFW, fill=NA, color="black") +
-#   coord_sf(xlim = c(-71.39, -70.81), ylim = c(40.82, 41.28)) +
-#   geom_sf(data = path1_sfbuff, color = "khaki", fill ="gold", alpha=0.2) + 
-#   geom_sf(data = path2_sfbuff, color = "khaki", fill ="gold", alpha=0.2) +
-#   geom_sf(data = path3_sfbuff, color = "khaki", fill ="gold", alpha=0.2) +
-#   geom_sf(data = path4_sfbuff, color = "khaki", fill ="gold", alpha=0.2) + 
-#   geom_sf(data = path1_sf, color="orange") + 
-#   geom_sf(data = path2_sf, color="orange") +
-#   geom_sf(data = path3_sf, color="orange") +
-#   geom_sf(data = path4_sf, color="orange") + 
-#   theme_bw()
-
 ##### import tag data
 tag1_detections = read_csv("~/Downloads/ru34-20251103T1347_rxlive_detections (1).csv")
 tag1_info = read_csv("~/Downloads/ru34-20251103T1347_rxlive_taginfo (1).csv")
@@ -160,68 +135,95 @@ taginfo = rbind(tag1_info, tag2_info, tag3_info, tag4_info) %>%
             end = max(t1))
 write_xlsx(taginfo, path = "~/Downloads/cod2526_taginfo.xlsx")
 
-# receiver sync tags
-sync_tag_id = c("61099","61140","61141","61142","61143","61146","61148","61149",
-                "61150","61153","61154","61155","61156","61157","61158","61159",
-                "61160","61161","61162","61163","61164","61165","61171","61188",
-                "61196","61197","61212","61215","61219","61221","61243","61245",
-                "65006","65008")
-#sync_tags = tag_layers[lapply(tag_layers, layer_name %in% sync_tag_id)] 
+cod = c("A69-1602-58729","A69-1602-58733","A69-1602-58746","A69-1602-58759",
+        "A69-1602-58784","A69-1602-58808","A69-1602-58815")#,
+        #"A69-1602-58789","A69-1602-58805")
 
-# Ali's tags
-FreyTags <- read_excel("Downloads/FreyAllSMASTTags.xlsx")
-FreyTags$name = sapply(strsplit(FreyTags$'Tag ID', "-"), tail, 1)
-#matches = FreyTags[FreyTags$name %in% tag_ids,]
-#Frey_tags = dplyr::filter(tag_sum, name %in% matches$name)
-#Frey_tags = left_join(Frey_tags, FreyTags, by = "name") %>% filter(species %in% "cod")
-#result <- as.data.frame(matrix(unlist(layers_sf), ncol = length(layers_sf), byrow = TRUE))
 
+tags = rbind(tag1_detections, tag2_detections, 
+             tag3_detections, tag4_detections) %>% 
+  filter(Transmitter %in% cod) %>%
+  mutate(date_time = as.POSIXct(`Date and Time (UTC)`, format = "%m/%d/%Y %H:%M:%S",, tz="UTC"))
+paths = rbind(path1, path2, path3, path4)
+
+# combine detection with location
+find_nearest_date <- function(date, date_match){  
+  date_nearest <- date %>% 
+    map_dbl(find_nearest_date_worker, date_match) %>% 
+    as.POSIXct(tz = "UTC", origin = "1970-01-01")
+  return(date_nearest)
+}
+
+find_nearest_date_worker <- function(date, date_vector) {
+  delta <- abs(date - date_vector)
+  index <- which.min(delta)
+  x <- date_vector[index]
+  return(x)
+}
+
+tags$match_time = find_nearest_date(tags$date_time, paths$date_time)
+tags = left_join(tags, paths, by =c("match_time"="date_time"))
 
 ### plots
 bathy = fortify(getNOAA.bathy(-71.4, -70.8, 40.8, 41.3)) # lat/long coordinates of area of interest
 bathy$z[bathy$z >= 0] = 0 #
 bathy$z = abs(bathy$z) # convert to absolute values so it plots and gradients correctly
 
-#states <- ne_states(returnclass = "sf") %>% 
-#  filter(admin %in% "United States of America",
-#         name_id %in% "Massachusetts")
-
 p = ggplot() + 
-  #geom_sf(data = states) +
-  geom_contour_filled(data = bathy, aes(x = x, y = y, z = z), colour = NA,
-                      breaks = c(seq(from = -60, to = 0, by = 5)), 
+  geom_contour_filled(data = bathy, aes(x = x, y = y, z = z), 
                       show.legend = FALSE, alpha = 0.3) +
-  scale_fill_brewer(palette = "Blues", direction=-1) +
-  #scale_fill_continuous(breaks = c(min(bathy$z), median(bathy$z), max(bathy$z))) + 
-  #scale_fill_grey(start = 0.9, end = 0.3) +
+  scale_fill_brewer(palette = "Blues", direction=1) +
   geom_sf(data = REV, fill=NA, color="black") + 
   geom_sf(data = SRW, fill=NA, color="black") + 
-  geom_sf(data = SFW, fill=NA, color="black") +
+  geom_sf(data = SFW[1,], fill=NA, color="black") +
   coord_sf(xlim = c(-71.39, -70.81), ylim = c(40.82, 41.28)) 
 p
 
 p1 = p + 
-  geom_sf(data = tag_df[tag_df$Name %in% Frey_tags$name[Frey_tags$species %in% "cod"],], aes(color = Name)) + 
+  geom_point(data = tags, aes(y = latitude, x = longitude, color = Transmitter)) + 
   theme_bw() +
-  labs(title = "Frey Cod", colour = "Tag ID", fill = "Bathy") +
-  coord_sf(xlim = c(-71.39, -70.81), ylim = c(40.82, 41.28)) 
+  labs(x = "Longitude", y = "Latitude", 
+       title = "Atlantic Cod Transmitters", colour = "Tag ID", fill = "Bathy") +
+  coord_sf(xlim = c(-71.35, -70.81), ylim = c(40.88, 41.28)) 
 p1
-ggsave("cod_nov25_Frey_cod_tags.png", p1)
+ggsave("cod_tags2526.png", p1)
 
 p2 = p + 
-  geom_sf(data = hms_array, color = "black", size=0.5) + 
-  geom_sf(data = sfw_array, color = "darkgrey", size=0.5) + 
-  geom_sf(data = tag_df[tag_df$Name %in% sync_tag_id,], aes(color = Name)) + 
+  geom_point(data = tags, aes(y = latitude, x = longitude, color = Transmitter)) + 
+  facet_wrap(~Transmitter) +
   theme_bw() +
-  labs(title = "Sync Tags", colour = "Tag ID", fill = "Bathy") +
-  coord_sf(xlim = c(-71.39, -70.81), ylim = c(40.82, 41.28)) 
+  labs(x = "Longitude", y = "Latitude", 
+       title = "Atlantic Cod Transmitters", colour = "Tag ID", fill = "Bathy") +
+  coord_sf(xlim = c(-71.35, -70.81), ylim = c(40.88, 41.28)) +
+  theme(legend.position = "none",
+        text = element_text(size = 11))
 p2
-ggsave("cod_dec25_sync_tags.png", p2)
+ggsave("cod_tags2526_facet.png", p2)
 
-#### exports
-for_Ali = tag_df[tag_df$Name %in% Frey_tags$name[Frey_tags$species %in% "cod"],]
-for_Ali = cbind(for_Ali, as.data.frame(st_coordinates(for_Ali))) %>% 
-  dplyr::select(-Description, -geometry, -Z)
+#---------------#
+# Time diff
+#---------------#
+# for dead cod uncomment transmitters above before creating `tags`
+cod_sum = tags %>% 
+  group_by(Transmitter) %>%
+  summarise(first_lat = first(latitude),
+         first_lon = first(longitude),
+         first_hit = first(date_time),
+         last_lat = last(latitude),
+         last_lon = last(longitude),
+         last_hit = last(date_time)) %>%
+  rowwise() %>%
+  mutate(dist = round(distm(c(first_lon, first_lat), c(last_lon, last_lat), 
+                                fun = distHaversine), digits = 2), 
+         secs = (last_hit - first_hit),
+         mins = ifelse(secs > 60, round(secs/60, digits = 2), NA),
+         days = ifelse(secs > 86400, round(secs/86400, digits = 2), NA))
 
+#---------------#
 
+#---------------#
+# Comparison to previous seasons
+#---------------#
+#run REV_SRW_tags_2025.R
 
+#---------------#
