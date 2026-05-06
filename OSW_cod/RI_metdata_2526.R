@@ -12,11 +12,11 @@ buzm3h2025 <- read_table("Downloads/buzm3h2025.txt", skip = 1)
 buzm3h2024 <- read_table("Downloads/buzm3h2024.txt", skip = 1)
 buzm3h12026 <- read_table("Downloads/buzm312026.txt", skip = 1)
 buzm3h22026 <- read_table("Downloads/buzm322026.txt", skip = 1)
-buzm3h32026 <- read_table("Documents/Indicators/buz3Mar26.rtf", 
-                          skip = 10)
+buzm3h32026 <- read_table("Downloads/buz3Mar26.rtf", skip = 10)
 
 wspd = rbind(buzm3h2025[,1:7], buzm3h2024[,1:7], 
-             buzm3h12026[,1:7], buzm3h22026[,1:7])#, buzm3h22026) 
+             buzm3h12026[,1:7], buzm3h22026[,1:7], 
+             buzm3h32026[,1:7]) 
 wspd = mutate(wspd,
               date_time = as.POSIXct(paste(paste(`#yr`, mo, dy, sep="-"), 
                                            paste(hr, mn, sep=":"), sep = " "),
@@ -31,7 +31,6 @@ season2425 = wspd %>% filter(date_time > as.Date("2024-11-01"),
                              date_time < as.Date("2025-03-31"))
 season2526 = wspd %>% filter(date_time > as.Date("2025-11-01"))
 
-
 p1 = ggplot() + 
   geom_line(data = season2425, aes(x =date_time, y = wspd), color = "cornflowerblue") + 
   theme_bw()+ labs(x = "Time", y = "Wind Speed (m/s)")
@@ -40,26 +39,82 @@ p2 = ggplot() +
   theme_bw() + labs(x = "Time", y = "Wind Speed (m/s)")
 ggarrange(p1, p2, ncol = 1) 
 
+
+avg_wspd2425 = season2425 %>% 
+  group_by(date(date_time)) %>% 
+  summarise(avwspd = mean(wspd),
+            stdwspd = sd(wspd))
+avg_wspd2526 = season2526 %>% 
+  group_by(date(date_time)) %>% 
+  summarise(avwspd = mean(wspd),
+            stdwspd = sd(wspd))
+ggplot() +
+  geom_line(data = avg_wspd2425, aes(x = `date(date_time)`, y = avwspd), color = "cornflowerblue")+ 
+  geom_line(data = avg_wspd2526, aes(x = `date(date_time)`-365, y = avwspd), color = "navy")+ 
+  theme_bw() + labs(x = "Time", y = "Wind Speed (m/s)")  
+  
 # Wind Rose
 compass_directions <- c("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW")
 degrees_per_sector <- 22.5
 
 wind_to_compass <- function(degrees) {
   degrees <- degrees %% 360  # Ensure degrees are within 0-359 range
-  sector_index <- ceiling(degrees / degrees_per_sector)
+  sector_index <- floor((degrees + 11.25) / 22.5) + 1
+  #sector_index <- ceiling(degrees / degrees_per_sector)
   # Handle edge case where sector_index is 17 (should be 1)
   if (sector_index == 17) {sector_index <- 1}
   if (sector_index == 0) {sector_index <- 1}
   return(compass_directions[sector_index])
 }
 
-compass_direction <- wspd %>% 
+season2425$direction <- sapply(season2425$wdir, wind_to_compass)
+season2425$direction <- factor(season2425$direction, 
+                               levels = compass_directions)
+season2526$direction <- sapply(season2526$wdir, wind_to_compass)
+season2526$direction <- factor(season2526$direction, 
+                               levels = compass_directions)
+
+p1 = ggplot(data = season2425, aes(x = direction, fill = wspd)) +
+  geom_bar() +
+  coord_polar()+#start = -pi/16) + # -pi/16 aligns sectors properly
+  theme_minimal() +
+  labs(title = "Wind Direction Frequency (Nov. 24 - Mar. 25)",
+       x = "Direction",
+       y = "Frequency",
+       fill = "Speed (m/s)") +
+  scale_fill_viridis_c()
+p2 = ggplot(data = season2526, aes(x = direction, fill = wspd)) +
+  geom_bar() +
+  coord_polar()+#start = -pi/16) + # -pi/16 aligns sectors properly
+  theme_minimal() +
+  labs(title = "Wind Direction Frequency (Nov. 25 - Mar. 26)",
+       x = "Direction",
+       y = "Frequency",
+       fill = "Speed (m/s)") +
+  scale_fill_viridis_c()
+ggarrange(p1, p2, ncol = 2)
+          
+
+compass_direction <- season2425 %>% 
   rowwise() %>% 
   mutate(heading = wind_to_compass(wdir))
 
 sum_comp_dir = compass_direction %>% 
   group_by(heading, wdir, round(wspd)) %>% 
   summarise(n=n())
+
+ggplot(data = sum_comp_dir, aes(x = heading, fill = `round(wspd)`)) +
+  geom_bar() +
+  coord_polar(start = -pi/16) + # -pi/16 aligns sectors properly
+  theme_minimal() +
+  labs(title = "Wind Direction Frequency",
+       x = "Direction",
+       y = "Frequency",
+       fill = "Speed (m/s)") +
+  scale_fill_viridis_c() # Adds nice color coding
+
+
+
 
 plot.windrose <- function(data, spd, dir, spdres = 2, dirres = 30, spdmin = 2, spdmax = 20, spdseq = NULL, palette = "YlGnBu", countmax = NA) {
   if (is.numeric(spd) & is.numeric(dir)) {
