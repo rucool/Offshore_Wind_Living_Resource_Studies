@@ -13,6 +13,7 @@ library(sftime)
 #require(rnaturalearth)
 library(writexl)
 library(geosphere)
+library(ggpubr)
 
 #### leases
 #leases = st_read(dsn = "~/Downloads/BOEM-Renewable-Energy-Shapefiles_22_10_21/", 
@@ -139,11 +140,12 @@ cod = c("A69-1602-58729","A69-1602-58733","A69-1602-58746","A69-1602-58759",
         "A69-1602-58784","A69-1602-58808","A69-1602-58815")#,
         #"A69-1602-58789","A69-1602-58805")
 
-
 tags = rbind(tag1_detections, tag2_detections, 
-             tag3_detections, tag4_detections) %>% 
-  filter(Transmitter %in% cod) %>%
-  mutate(date_time = as.POSIXct(`Date and Time (UTC)`, format = "%m/%d/%Y %H:%M:%S",, tz="UTC"))
+             tag3_detections, tag4_detections) %>%
+  mutate(date_time = as.POSIXct(`Date and Time (UTC)`, 
+                                format = "%m/%d/%Y %H:%M:%S",
+                                tz="UTC"))
+cod_tags = tags %>% filter(Transmitter %in% cod) 
 paths = rbind(path1, path2, path3, path4)
 
 # combine detection with location
@@ -161,10 +163,47 @@ find_nearest_date_worker <- function(date, date_vector) {
   return(x)
 }
 
-tags$match_time = find_nearest_date(tags$date_time, paths$date_time)
-tags = left_join(tags, paths, by =c("match_time"="date_time"))
+cod_tags$match_time = find_nearest_date(cod_tags$date_time, paths$date_time)
+cod_tags = left_join(cod_tags, paths, by =c("match_time"="date_time"))
 
 ### plots
+tag_sum = tags %>% 
+  mutate(mo = month(date_time),
+         day = date(date_time), 
+         species = ifelse(species %in% c("V16-4x Cod","cod"),"Atlantic Cod",species),
+         species = ifelse(species %in% c("CFRF Sync Tag","External Sync Tag"),"Sync Tag",species),
+         species = ifelse(is.na(species),"Unknown", species)) %>%
+  filter(!species %in% "glider",
+         !Transmitter %in% c("A69-1602-58789","A69-1602-58805"),
+         !mo %in% 10) %>%
+  group_by(Transmitter, mo, day, species) %>% 
+  summarise(n=n()) %>% 
+  group_by(mo, species) %>% 
+  summarise(n=n()) %>% 
+  mutate(ord = 1,
+         ord = ifelse(mo %in% 11, 2, ord),
+         ord = ifelse(mo %in% 12, 3, ord),
+         ord = ifelse(mo %in% 1, 4, ord),
+         ord = ifelse(mo %in% 2, 5, ord),
+         ord = ifelse(mo %in% 3, 6, ord))
+
+p1 = ggplot(data = tag_sum, aes(x = reorder(mo, ord), y=n, fill=species)) + 
+  geom_col(position = "stack") + 
+  theme_bw() + 
+  labs(x="Month", y = "Number of daily detections of unique transmitters per month",fill="Type") + 
+  scale_fill_brewer(palette = "BrBG") +
+  theme(text = element_text(size=15)) + 
+  annotate("text", x = 3, y = 27, label = "out of water from 12/23-1/21", color = "black") 
+p1
+# p2 = ggplot(data = cod_tags, aes(x=date_time, y=Transmitter, col=Transmitter)) + 
+#   geom_point(size = 3) + 
+#   theme_bw() + 
+#   theme(legend.position = "none",
+#         text = element_text(size=15)) +
+#   labs(x="Month")
+# ggarrange(p1,p2, ncol=2)
+  
+
 bathy = fortify(getNOAA.bathy(-71.4, -70.8, 40.8, 41.3)) # lat/long coordinates of area of interest
 bathy$z[bathy$z >= 0] = 0 #
 bathy$z = abs(bathy$z) # convert to absolute values so it plots and gradients correctly
