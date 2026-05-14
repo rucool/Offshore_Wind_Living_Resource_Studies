@@ -165,6 +165,11 @@ find_nearest_date_worker <- function(date, date_vector) {
 
 cod_tags$match_time = find_nearest_date(cod_tags$date_time, paths$date_time)
 cod_tags = left_join(cod_tags, paths, by =c("match_time"="date_time"))
+cod_sf = st_as_sf(cod_tags %>% select(latitude, longitude, date_time, Transmitter), coords = c("longitude", "latitude"), crs = 4326)
+
+st_write(cod_sf, dsn = "~/Downloads/", layer = "codtags2526", driver = "ESRI Shapefile", delete_layer = TRUE)
+#st_write(cod_sf, dsn = "~/Downloads", driver = "KML", delete_layer = TRUE)
+
 
 ### plots
 tag_sum = tags %>% 
@@ -204,36 +209,38 @@ p1
 # ggarrange(p1,p2, ncol=2)
   
 
-bathy = fortify(getNOAA.bathy(-71.4, -70.8, 40.8, 41.3)) # lat/long coordinates of area of interest
+bathy = fortify(getNOAA.bathy(-71.4, -70.8, 40.8, 41.3, resolution=1))
 bathy$z[bathy$z >= 0] = 0 #
 bathy$z = abs(bathy$z) # convert to absolute values so it plots and gradients correctly
+blues_extended <- colorRampPalette(brewer.pal(9, "Blues"))(13)  # 20 colors
 
 p = ggplot() + 
   geom_contour_filled(data = bathy, aes(x = x, y = y, z = z), 
                       show.legend = FALSE, alpha = 0.3) +
-  scale_fill_brewer(palette = "Blues", direction=1) +
+  scale_fill_manual(values = blues_extended) +
   geom_sf(data = REV, fill=NA, color="black") + 
   geom_sf(data = SRW, fill=NA, color="black") + 
   geom_sf(data = SFW[1,], fill=NA, color="black") +
-  coord_sf(xlim = c(-71.39, -70.81), ylim = c(40.82, 41.28)) 
+  coord_sf(xlim = c(-71.35, -70.83), ylim = c(40.88, 41.28)) 
 p
 
+
 p1 = p + 
-  geom_point(data = tags, aes(y = latitude, x = longitude, color = Transmitter)) + 
+  geom_point(data = cod_tags, aes(y = latitude, x = longitude, color = Transmitter), size = 3) + 
   theme_bw() +
   labs(x = "Longitude", y = "Latitude", 
        title = "Atlantic Cod Transmitters", colour = "Tag ID", fill = "Bathy") +
-  coord_sf(xlim = c(-71.35, -70.81), ylim = c(40.88, 41.28)) 
+  coord_sf(xlim = c(-71.35, -70.83), ylim = c(40.88, 41.28)) 
 p1
 ggsave("cod_tags2526.png", p1)
 
 p2 = p + 
-  geom_point(data = tags, aes(y = latitude, x = longitude, color = Transmitter)) + 
+  geom_point(data = cod_tags, aes(y = latitude, x = longitude, color = Transmitter), size=3) + 
   facet_wrap(~Transmitter) +
   theme_bw() +
   labs(x = "Longitude", y = "Latitude", 
        title = "Atlantic Cod Transmitters", colour = "Tag ID", fill = "Bathy") +
-  coord_sf(xlim = c(-71.35, -70.81), ylim = c(40.88, 41.28)) +
+  coord_sf(xlim = c(-71.35, -70.83), ylim = c(40.88, 41.28)) +
   theme(legend.position = "none",
         text = element_text(size = 11))
 p2
@@ -243,8 +250,9 @@ ggsave("cod_tags2526_facet.png", p2)
 # Time diff
 #---------------#
 # for dead cod uncomment transmitters above before creating `tags`
-cod_sum = tags %>% 
+cod_sum = cod_tags %>% 
   group_by(Transmitter) %>%
+  arrange(date_time) %>% 
   summarise(first_lat = first(latitude),
          first_lon = first(longitude),
          first_hit = first(date_time),
