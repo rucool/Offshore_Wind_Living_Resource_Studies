@@ -154,20 +154,34 @@ whole_mission = mutate(whole_mission,
                        campaign = ifelse(date_time > as.Date("2023-06-30") & date_time < as.Date("2024-06-30") ,"2023-2024",campaign),
                        campaign = ifelse(date_time < as.Date("2023-06-30") ,"2022-2023",campaign))
 
+cbPalette <- c("#CC79A7","#999999", "#E69F00", "#56B4E9")#), "#009E73")#, "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
 ggplot(data=whole_mission, 
        aes(y=temperature, x=reorder(month(date_time),ord), 
            fill=campaign)) + 
          geom_boxplot() + 
   labs(fill="Campaign", y="Temperature (C)", x="Month") +
-  theme_bw()
+  theme_bw() +
+  theme(text = element_text(size = 20)) + 
+  scale_fill_manual(values=cbPalette)
+
 
 ggplot(data=whole_mission, 
        aes(y=salinity, x=reorder(month(date_time),ord), 
            fill=campaign)) + 
   geom_boxplot() + 
   labs(fill="Campaign", y="Salinity", x="Month") +
-  theme_bw()
+  theme_bw() + 
+  theme(text = element_text(size = 20)) + 
+  ylim(29,34) +
+  scale_fill_manual(values=cbPalette)
 
+
+ggplot(data=whole_mission, 
+       aes(y=temperature, x=salinity, col=campaign)) +
+  geom_point() + 
+  theme_bw() + 
+  xlim(28,34)
 
 # 
 # ggplot(data=whole_mission, 
