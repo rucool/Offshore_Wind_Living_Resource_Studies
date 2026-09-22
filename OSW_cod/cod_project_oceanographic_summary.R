@@ -85,34 +85,98 @@ m4 = unique(m4) # remove dups
 
 #library(gtools)
 #do.call(smartbind,l)
-whole_mission = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitude, longitude, 
-                                                           depth, temperature, salinity)),
-                          (ru34_sci_jan24 %>% dplyr::select(date_time, latitude, longitude, 
-                                                             depth, temperature, salinity)),
-                          (ru34_sci_mar24 %>% dplyr::select(date_time, latitude, longitude, 
-                                                           depth, temperature, salinity)),
-                          (ru34_sci_nov24 %>% dplyr::select(date_time, latitude, longitude, 
-                                                            depth, temperature, salinity)),
-                          (unit1190_sci_dec24 %>% dplyr::select(date_time, latitude, longitude, 
-                                                               depth, temperature, salinity)),
-                          (ru34_sci_jan25 %>% dplyr::select(date_time, latitude, longitude, 
-                                                           depth, temperature, salinity)),
-                          (unit1190_sci_feb25 %>% dplyr::select(date_time, latitude, longitude, 
-                                                                depth, temperature, salinity)),
-                          (ru34_sci_mar25 %>% dplyr::select(date_time, latitude, longitude, 
-                                                            depth, temperature, salinity)),
-                          (m1 %>% dplyr::select(date_time, latitude, longitude, 
-                                                depth, temperature, salinity)),
-                          (m2 %>% dplyr::select(date_time, latitude, longitude, 
-                                                depth, temperature, salinity)),
-                          (m3 %>% dplyr::select(date_time, latitude, longitude, 
-                                                depth, temperature, salinity)),
-                          (m4 %>% dplyr::select(date_time, latitude, longitude, 
-                                                depth, temperature, salinity))) %>% 
+whole_mission  = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitude, longitude, 
+                                                             depth, temperature, salinity, density)),
+                           (ru34_sci_jan24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                             depth, temperature, salinity, density)),
+                           (ru34_sci_mar24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                             depth, temperature, salinity, density)),
+                           (ru34_sci_nov24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                             depth, temperature, salinity, density)),
+                           (unit1190_sci_dec24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                                 depth, temperature, salinity, density)),
+                           (ru34_sci_jan25 %>% dplyr::select(date_time, latitude, longitude, 
+                                                             depth, temperature, salinity, density)),
+                           (unit1190_sci_feb25 %>% dplyr::select(date_time, latitude, longitude, 
+                                                                 depth, temperature, salinity, density)),
+                           (ru34_sci_mar25 %>% dplyr::select(date_time, latitude, longitude, 
+                                                             depth, temperature, salinity, density)),
+                           (m1 %>% dplyr::select(date_time, latitude, longitude, 
+                                                 depth, temperature, salinity, density)),
+                           (m2 %>% dplyr::select(date_time, latitude, longitude, 
+                                                 depth, temperature, salinity, density)),
+                           (m3 %>% dplyr::select(date_time, latitude, longitude, 
+                                                 depth, temperature, salinity, density)),
+                           (m4 %>% dplyr::select(date_time, latitude, longitude, 
+                                                 depth, temperature, salinity, density))) %>% 
   mutate(temperature = as.numeric(temperature),
          salinity = as.numeric(salinity),
-         depth = as.numeric(depth))
+         depth = as.numeric(depth),
+         density = as.numeric(density),
+         ord = NA,
+         ord = ifelse(month(date_time) %in% 10, 1, ord),
+         ord = ifelse(month(date_time) %in% 11, 2, ord),
+         ord = ifelse(month(date_time) %in% 12, 3, ord),
+         ord = ifelse(month(date_time) %in% 1, 4, ord),
+         ord = ifelse(month(date_time) %in% 2, 5, ord),
+         ord = ifelse(month(date_time) %in% 3, 6, ord),
+         ord = ifelse(month(date_time) %in% 4, 7, ord),
+         campaign = NA,
+         campaign = ifelse(date_time > as.Date("2025-06-30"),"2025-2026",campaign),
+         campaign = ifelse(date_time > as.Date("2024-06-30") & date_time < as.Date("2025-06-30") ,"2024-2025",campaign),
+         campaign = ifelse(date_time > as.Date("2023-06-30") & date_time < as.Date("2024-06-30") ,"2023-2024",campaign),
+         campaign = ifelse(date_time < as.Date("2023-06-30") ,"2022-2023",campaign))
 
+
+chl_oxy_missions = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitude, longitude, 
+                                                              depth, temperature, salinity,
+                                                              chlorophyll_a, oxygen_concentration,
+                                                              oxygen_saturation, cdom, beta_700nm)),
+                            (ru34_sci_jan24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                              depth, temperature, salinity,
+                                                              chlorophyll_a, oxygen_concentration,
+                                                              oxygen_saturation, cdom, beta_700nm)),
+                            (ru34_sci_mar24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                              depth, temperature, salinity,
+                                                              chlorophyll_a, oxygen_concentration,
+                                                              oxygen_saturation, cdom, beta_700nm)),
+                            (ru34_sci_nov24 %>% dplyr::select(date_time, latitude, longitude, 
+                                                              depth, temperature, salinity,
+                                                              chlorophyll_a, oxygen_concentration,
+                                                              oxygen_saturation, cdom, beta_700nm)),
+                            (ru34_sci_jan25 %>% dplyr::select(date_time, latitude, longitude, 
+                                                              depth, temperature, salinity,
+                                                              chlorophyll_a, oxygen_concentration,
+                                                              oxygen_saturation, cdom, beta_700nm)),
+                            (ru34_sci_mar25 %>% dplyr::select(date_time, latitude, longitude, 
+                                                              depth, temperature, salinity,
+                                                              chlorophyll_a, oxygen_concentration,
+                                                              oxygen_saturation, cdom, beta_700nm)),
+                            (m1 %>% dplyr::select(date_time, latitude, longitude, 
+                                                  depth, temperature, salinity,
+                                                  chlorophyll_a, oxygen_concentration,
+                                                  oxygen_saturation, cdom, beta_700nm))) %>% 
+  mutate(temperature = as.numeric(temperature),
+         salinity = as.numeric(salinity),
+         depth = as.numeric(depth),
+         chlorophyll_a = as.numeric(chlorophyll_a),
+         oxygen_concentration = as.numeric(oxygen_concentration),
+         oxygen_saturation = as.numeric(oxygen_saturation), 
+         cdom = as.numeric(cdom), 
+         beta_700nm = as.numeric(beta_700nm),
+         ord = NA,
+         ord = ifelse(month(date_time) %in% 10, 1, ord),
+         ord = ifelse(month(date_time) %in% 11, 2, ord),
+         ord = ifelse(month(date_time) %in% 12, 3, ord),
+         ord = ifelse(month(date_time) %in% 1, 4, ord),
+         ord = ifelse(month(date_time) %in% 2, 5, ord),
+         ord = ifelse(month(date_time) %in% 3, 6, ord),
+         ord = ifelse(month(date_time) %in% 4, 7, ord),
+         campaign = NA,
+         campaign = ifelse(date_time > as.Date("2025-06-30"),"2025-2026",campaign),
+         campaign = ifelse(date_time > as.Date("2024-06-30") & date_time < as.Date("2025-06-30") ,"2024-2025",campaign),
+         campaign = ifelse(date_time > as.Date("2023-06-30") & date_time < as.Date("2024-06-30") ,"2023-2024",campaign),
+         campaign = ifelse(date_time < as.Date("2023-06-30") ,"2022-2023",campaign))
 
 
 # stats
@@ -139,21 +203,6 @@ whole_mission = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitude,
 
 
 #plots
-whole_mission = mutate(whole_mission, 
-                       ord = NA,
-                       ord = ifelse(month(date_time) %in% 10, 1, ord),
-                       ord = ifelse(month(date_time) %in% 11, 2, ord),
-                       ord = ifelse(month(date_time) %in% 12, 3, ord),
-                       ord = ifelse(month(date_time) %in% 1, 4, ord),
-                       ord = ifelse(month(date_time) %in% 2, 5, ord),
-                       ord = ifelse(month(date_time) %in% 3, 6, ord),
-                       ord = ifelse(month(date_time) %in% 4, 7, ord),
-                       campaign = NA,
-                       campaign = ifelse(date_time > as.Date("2025-06-30"),"2025-2026",campaign),
-                       campaign = ifelse(date_time > as.Date("2024-06-30") & date_time < as.Date("2025-06-30") ,"2024-2025",campaign),
-                       campaign = ifelse(date_time > as.Date("2023-06-30") & date_time < as.Date("2024-06-30") ,"2023-2024",campaign),
-                       campaign = ifelse(date_time < as.Date("2023-06-30") ,"2022-2023",campaign))
-
 cbPalette <- c("#CC79A7","#999999", "#E69F00", "#56B4E9")#), "#009E73")#, "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ggplot(data=whole_mission, 
@@ -173,29 +222,63 @@ ggplot(data=whole_mission,
   labs(fill="Campaign", y="Salinity", x="Month") +
   theme_bw() + 
   theme(text = element_text(size = 20)) + 
-  ylim(29,34) +
+  ylim(30,34) +
+  scale_fill_manual(values=cbPalette)
+
+ggplot(data=whole_mission, 
+       aes(y=density, x=reorder(month(date_time),ord), 
+           fill=campaign)) + 
+  geom_boxplot() + 
+  labs(fill="Campaign", y="Density (kg/m^3)", x="Month") +
+  theme_bw() + 
+  ylim(1023.5,1026.5) +
+  theme(text = element_text(size = 20)) + 
+  scale_fill_manual(values=cbPalette)
+
+# ggplot(data=whole_mission, 
+#        aes(y=temperature, x=salinity, col=campaign)) +
+#   geom_point() + 
+#   theme_bw() + 
+#   xlim(28,34)
+
+ggplot(data=chl_oxy_missions, 
+       aes(y=chlorophyll_a, x=reorder(month(date_time),ord), 
+           fill=campaign)) + 
+  geom_boxplot() + 
+  labs(fill="Campaign", y="Chlorophyll a (ug/L)", x="Month") +
+  theme_bw() +
+  ylim(0,4) +
+  theme(text = element_text(size = 20)) + 
   scale_fill_manual(values=cbPalette)
 
 
-ggplot(data=whole_mission, 
-       aes(y=temperature, x=salinity, col=campaign)) +
-  geom_point() + 
+ggplot(data=chl_oxy_missions, 
+       aes(y=oxygen_concentration*.032, x=reorder(month(date_time),ord), 
+           fill=campaign)) + 
+  geom_boxplot() + 
+  labs(fill="Campaign", y="Oxygen Concentration (mg/L)", x="Month") +
   theme_bw() + 
-  xlim(28,34)
+  ylim(6,11) +
+  theme(text = element_text(size = 20)) + 
+  scale_fill_manual(values=cbPalette)
 
-# 
-# ggplot(data=whole_mission, 
-#        aes(y=temperature, x=ord), 
-#            col=campaign)) + 
-#   geom_point() + 
-#   geom_smooth(method = 'lm') + 
-#   labs(col="Campaign", y="Temperature (C)", x="Month") +
-#   theme_bw()
-# 
-# gplot(data=whole_mission, 
-#       aes(y=salinity, x=reorder(month(date_time), ord), 
-#           col=campaign)) + 
-#   geom_point() + 
-#   geom_smooth(method = 'lm') + 
-#   labs(col="Campaign", y="Salinity", x="Month") +
-#   theme_bw()
+ggplot(data=chl_oxy_missions, 
+       aes(y=oxygen_saturation, x=reorder(month(date_time),ord), 
+           fill=campaign)) + 
+  geom_boxplot() + 
+  labs(fill="Campaign", y="Oxygen saturation (%)", x="Month") +
+  theme_bw() + 
+  ylim(80,105) +
+  theme(text = element_text(size = 20)) + 
+  scale_fill_manual(values=cbPalette)
+
+ggplot(data=chl_oxy_missions, 
+       aes(y=cdom, x=reorder(month(date_time),ord), 
+           fill=campaign)) + 
+  geom_boxplot() + 
+  labs(fill="Campaign", y="CDOM (ppb)", x="Month") +
+  theme_bw() +
+  ylim(0,10) +
+  theme(text = element_text(size = 20)) + 
+  scale_fill_manual(values=cbPalette)
+
