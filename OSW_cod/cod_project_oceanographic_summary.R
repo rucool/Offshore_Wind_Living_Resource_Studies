@@ -121,6 +121,14 @@ whole_mission  = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitude
          ord = ifelse(month(date_time) %in% 2, 5, ord),
          ord = ifelse(month(date_time) %in% 3, 6, ord),
          ord = ifelse(month(date_time) %in% 4, 7, ord),
+         m = NA,
+         m = ifelse(month(date_time) %in% 10, "Oct.", m),
+         m = ifelse(month(date_time) %in% 11, "Nov.", m),
+         m = ifelse(month(date_time) %in% 12, "Dec.", m),
+         m = ifelse(month(date_time) %in% 1, "Jan.", m),
+         m = ifelse(month(date_time) %in% 2, "Feb.", m),
+         m = ifelse(month(date_time) %in% 3, "Mar.", m),
+         m = ifelse(month(date_time) %in% 4, "Apr.", m),
          campaign = NA,
          campaign = ifelse(date_time > as.Date("2025-06-30"),"2025-2026",campaign),
          campaign = ifelse(date_time > as.Date("2024-06-30") & date_time < as.Date("2025-06-30") ,"2024-2025",campaign),
@@ -172,6 +180,14 @@ chl_oxy_missions = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitu
          ord = ifelse(month(date_time) %in% 2, 5, ord),
          ord = ifelse(month(date_time) %in% 3, 6, ord),
          ord = ifelse(month(date_time) %in% 4, 7, ord),
+         m = NA,
+         m = ifelse(month(date_time) %in% 10, "Oct.", m),
+         m = ifelse(month(date_time) %in% 11, "Nov.", m),
+         m = ifelse(month(date_time) %in% 12, "Dec.", m),
+         m = ifelse(month(date_time) %in% 1, "Jan.", m),
+         m = ifelse(month(date_time) %in% 2, "Feb.", m),
+         m = ifelse(month(date_time) %in% 3, "Mar.", m),
+         m = ifelse(month(date_time) %in% 4, "Apr.", m),
          campaign = NA,
          campaign = ifelse(date_time > as.Date("2025-06-30"),"2025-2026",campaign),
          campaign = ifelse(date_time > as.Date("2024-06-30") & date_time < as.Date("2025-06-30") ,"2024-2025",campaign),
@@ -206,20 +222,20 @@ chl_oxy_missions = bind_rows((ru34_sci_mar23 %>% dplyr::select(date_time, latitu
 cbPalette <- c("#CC79A7","#999999", "#E69F00", "#56B4E9")#), "#009E73")#, "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ggplot(data=whole_mission, 
-       aes(y=temperature, x=reorder(month(date_time),ord), 
+       aes(y=temperature, x=reorder(m,ord), #(month(date_time),ord), 
            fill=campaign)) + 
          geom_boxplot() + 
-  labs(fill="Campaign", y="Temperature (C)", x="Month") +
+  labs(fill="Campaign", y="Temperature (°C)", x="Month") +
   theme_bw() +
   theme(text = element_text(size = 20)) + 
   scale_fill_manual(values=cbPalette)
 
 
 ggplot(data=whole_mission, 
-       aes(y=salinity, x=reorder(month(date_time),ord), 
+       aes(y=salinity, x=reorder(m,ord), 
            fill=campaign)) + 
   geom_boxplot() + 
-  labs(fill="Campaign", y="Salinity", x="Month") +
+  labs(fill="Campaign", y="Salinity (PSU)", x="Month") +
   theme_bw() + 
   theme(text = element_text(size = 20)) + 
   ylim(30,34) +
